@@ -7,8 +7,36 @@ const HTML_RENDER_SYSTEM_PROMPT = `잘 너는 **표준 JSON(v1.1.0)** 문제 객
 ## 주요 역할
 1. **JSON 파싱**: 표준 JSON 문제 객체를 정확히 파싱
 2. **HTML 생성**: 문제, 선택지, 정답을 포함한 완전한 HTML 문서 생성
-3. **스타일링**: 읽기 쉽고 전문적인 CSS 스타일 적용
-4. **반응형**: 다양한 화면 크기에 대응하는 반응형 디자인
+3. **수식 렌더링**: 수학 기호, 첨자, 근호를 정확히 표시
+4. **스타일링**: 읽기 쉽고 전문적인 CSS 스타일 적용
+5. **반응형**: 다양한 화면 크기에 대응하는 반응형 디자인
+
+## 수학 기호 처리 규칙 (매우 중요!)
+수학 기호와 수식을 정확히 렌더링하기 위해 다음 규칙을 반드시 따르세요:
+
+### 1. 근호 (Root) 처리
+- ³√ → `<sup>3</sup>√` 또는 `∛`
+- ⁴√ → `<sup>4</sup>√` 또는 `∜`
+- √ → `√` (제곱근)
+
+### 2. 첨자 (Subscript/Superscript) 처리
+- ³ → `<sup>3</sup>`
+- ⁴ → `<sup>4</sup>`
+- ₁ → `<sub>1</sub>`
+- ₂ → `<sub>2</sub>`
+- ₃ → `<sub>3</sub>`
+- ₄ → `<sub>4</sub>`
+
+### 3. 분수 처리
+- a/b → `<span style="display: inline-block; vertical-align: middle; text-align: center; line-height: 1.2;"><span style="border-bottom: 1px solid; padding-bottom: 2px;">a</span><br><span style="font-size: 0.8em;">b</span></span>`
+
+### 4. 수학 연산자
+- ÷ → `÷`
+- × → `×`
+- ± → `±`
+- ≠ → `≠`
+- ≤ → `≤`
+- ≥ → `≥`
 
 ## 출력 형식
 반드시 완전한 HTML 문서를 생성해야 합니다:
@@ -20,6 +48,20 @@ const HTML_RENDER_SYSTEM_PROMPT = `잘 너는 **표준 JSON(v1.1.0)** 문제 객
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>문제 분석 결과</title>
+    <!-- MathJax CDN 추가 -->
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            },
+            svg: {
+                fontCache: 'global'
+            }
+        };
+    </script>
     <style>
         /* 전문적인 CSS 스타일 */
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; }
@@ -27,16 +69,22 @@ const HTML_RENDER_SYSTEM_PROMPT = `잘 너는 **표준 JSON(v1.1.0)** 문제 객
         .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; text-align: center; }
         .content { padding: 30px; }
         .problem { background: #f8f9fa; border-left: 4px solid #007bff; padding: 20px; margin: 20px 0; border-radius: 5px; }
-        .question { font-size: 18px; font-weight: 600; color: #333; margin-bottom: 15px; }
+        .question { font-size: 18px; font-weight: 600; color: #333; margin-bottom: 15px; line-height: 1.6; }
+        .question sup, .question sub { font-size: 0.7em; }
         .choices { list-style: none; padding: 0; }
-        .choice { background: white; margin: 8px 0; padding: 12px; border-radius: 5px; border: 1px solid #e9ecef; transition: all 0.3s ease; }
+        .choice { background: white; margin: 8px 0; padding: 12px; border-radius: 5px; border: 1px solid #e9ecef; transition: all 0.3s ease; line-height: 1.5; }
         .choice:hover { box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
         .choice.correct { background: #d4edda; border-color: #28a745; }
         .choice.correct::after { content: " ✅"; color: #28a745; font-weight: bold; }
         .answer { background: #d1ecf1; border: 1px solid #bee5eb; padding: 15px; border-radius: 5px; margin: 20px 0; }
         .metadata { background: #e2e3e5; padding: 15px; border-radius: 5px; margin-top: 20px; font-size: 14px; }
         .solution { background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin: 20px 0; }
-        .step { margin: 5px 0; padding: 5px 0; }
+        .step { margin: 5px 0; padding: 5px 0; line-height: 1.5; }
+        /* 수학 기호 스타일 */
+        .math-symbol { font-family: 'Times New Roman', serif; }
+        .fraction { display: inline-block; vertical-align: middle; text-align: center; line-height: 1.2; }
+        .fraction-numerator { border-bottom: 1px solid; padding-bottom: 2px; }
+        .fraction-denominator { font-size: 0.8em; }
         @media (max-width: 768px) { .content { padding: 20px; } .question { font-size: 16px; } }
     </style>
 </head>
@@ -57,21 +105,27 @@ const HTML_RENDER_SYSTEM_PROMPT = `잘 너는 **표준 JSON(v1.1.0)** 문제 객
 ## 중요 규칙
 1. **완전한 HTML**: DOCTYPE, html, head, body 태그를 모두 포함
 2. **한국어 지원**: lang="ko" 속성과 UTF-8 인코딩 설정
-3. **반응형 디자인**: viewport 메타 태그와 미디어 쿼리 포함
-4. **접근성**: 시맨틱 HTML과 적절한 색상 대비
-5. **정답 표시**: 정답 선택지는 시각적으로 구분 (배경색, 체크마크)
-6. **메타데이터**: 이미지 크기, 처리 시간, 신뢰도 정보 표시
-7. **해설 포함**: solution 정보가 있다면 단계별로 표시
+3. **수식 처리**: 수학 기호와 첨자를 HTML 엔티티나 적절한 태그로 변환
+4. **반응형 디자인**: viewport 메타 태그와 미디어 쿼리 포함
+5. **접근성**: 시맨틱 HTML과 적절한 색상 대비
+6. **정답 표시**: 정답 선택지는 시각적으로 구분 (배경색, 체크마크)
+7. **메타데이터**: 이미지 크기, 처리 시간, 신뢰도 정보 표시
+8. **해설 포함**: solution 정보가 있다면 단계별로 표시
+
+## 수식 변환 예시
+입력: "a>0일 때, ³√(√a/⁴√a) ÷ ⁴√(√a/³√a) × ⁴√(⁴√a/³√a)를 간단히 하면?"
+출력: "a>0일 때, <sup>3</sup>√(√a/<sup>4</sup>√a) ÷ <sup>4</sup>√(√a/<sup>3</sup>√a) × <sup>4</sup>√(<sup>4</sup>√a/<sup>3</sup>√a)를 간단히 하면?"
 
 ## 처리 단계
 1. JSON 데이터에서 문제 정보 추출
-2. 문제 텍스트와 선택지를 HTML로 변환
-3. 정답 선택지에 특별한 스타일 적용
-4. 메타데이터 정보를 하단에 표시
-5. 해설 정보가 있다면 단계별로 표시
-6. 완전한 HTML 문서 생성
+2. 수학 기호와 첨자를 적절한 HTML 태그로 변환
+3. 문제 텍스트와 선택지를 HTML로 변환
+4. 정답 선택지에 특별한 스타일 적용
+5. 메타데이터 정보를 하단에 표시
+6. 해설 정보가 있다면 단계별로 표시
+7. 완전한 HTML 문서 생성
 
-이제 제공된 JSON 문제 객체를 전문적인 HTML 문서로 렌더링하세요.`
+이제 제공된 JSON 문제 객체를 전문적인 HTML 문서로 렌더링하세요. 수학 기호가 포함된 경우 반드시 위의 변환 규칙을 적용하세요.`
 
 // OpenAI 클라이언트 초기화 함수
 function getOpenAIClient() {
@@ -122,37 +176,105 @@ export async function POST(request) {
     // 테스트 모드 확인 (테스트 데이터인 경우만)
     if (jsonData?.problems?.[0]?.id === 'prob_016') {
       console.log('테스트 모드로 더미 HTML 응답 반환')
+      
+      // 수식 렌더링을 위한 수정된 텍스트
+      const questionText = jsonData?.problems?.[0]?.question?.text || '다음 중 올바른 답은?'
+      const processedQuestionText = questionText
+        .replace(/³√/g, '<sup>3</sup>√')
+        .replace(/⁴√/g, '<sup>4</sup>√')
+        .replace(/³/g, '<sup>3</sup>')
+        .replace(/⁴/g, '<sup>4</sup>')
+        .replace(/₃/g, '<sub>3</sub>')
+        .replace(/₄/g, '<sub>4</sub>')
+      
       return NextResponse.json({
         success: true,
         html: `
-          <div style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px;">
-            <h2 style="color: #333; border-bottom: 2px solid #4CAF50; padding-bottom: 10px;">📝 문제 분석 결과</h2>
-            <div style="background: #f9f9f9; padding: 15px; border-radius: 8px; margin: 15px 0;">
-              <h3 style="color: #2196F3; margin-top: 0;">문제 1</h3>
-              <p style="font-size: 16px; line-height: 1.6;"><strong>질문:</strong> ${jsonData?.problems?.[0]?.question?.text || '다음 중 올바른 답은?'}</p>
-              <div style="margin: 15px 0;">
-                <h4 style="color: #FF9800;">선택지:</h4>
-                <ul style="list-style: none; padding: 0;">
-                  ${jsonData?.problems?.[0]?.choices?.map(choice => 
-                    `<li style="background: ${choice.id === jsonData?.problems?.[0]?.answer ? '#E8F5E8' : '#fff'}; 
-                               padding: 8px; margin: 5px 0; border-radius: 4px; border-left: 4px solid ${choice.id === jsonData?.problems?.[0]?.answer ? '#4CAF50' : '#ddd'};">
-                      <strong>${choice.id}.</strong> ${choice.text}
-                      ${choice.id === jsonData?.problems?.[0]?.answer ? ' ✅' : ''}
-                    </li>`
-                  ).join('') || '<li>선택지 정보 없음</li>'}
-                </ul>
+          <!DOCTYPE html>
+          <html lang="ko">
+          <head>
+              <meta charset="UTF-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              <title>문제 분석 결과</title>
+              <!-- MathJax CDN 추가 -->
+              <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+              <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+              <script>
+                  window.MathJax = {
+                      tex: {
+                          inlineMath: [['$', '$'], ['\\(', '\\)']],
+                          displayMath: [['$$', '$$'], ['\\[', '\\]']]
+                      },
+                      svg: {
+                          fontCache: 'global'
+                      }
+                  };
+              </script>
+              <style>
+                  body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; }
+                  .container { max-width: 800px; margin: 0 auto; background: white; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); overflow: hidden; }
+                  .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; text-align: center; }
+                  .content { padding: 30px; }
+                  .problem { background: #f8f9fa; border-left: 4px solid #007bff; padding: 20px; margin: 20px 0; border-radius: 5px; }
+                  .question { font-size: 18px; font-weight: 600; color: #333; margin-bottom: 15px; line-height: 1.6; }
+                  .question sup, .question sub { font-size: 0.7em; }
+                  .choices { list-style: none; padding: 0; }
+                  .choice { background: white; margin: 8px 0; padding: 12px; border-radius: 5px; border: 1px solid #e9ecef; transition: all 0.3s ease; line-height: 1.5; }
+                  .choice:hover { box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+                  .choice.correct { background: #d4edda; border-color: #28a745; }
+                  .choice.correct::after { content: " ✅"; color: #28a745; font-weight: bold; }
+                  .answer { background: #d1ecf1; border: 1px solid #bee5eb; padding: 15px; border-radius: 5px; margin: 20px 0; }
+                  .metadata { background: #e2e3e5; padding: 15px; border-radius: 5px; margin-top: 20px; font-size: 14px; }
+                  .solution { background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin: 20px 0; }
+                  .step { margin: 5px 0; padding: 5px 0; line-height: 1.5; }
+                  .math-symbol { font-family: 'Times New Roman', serif; }
+                  .fraction { display: inline-block; vertical-align: middle; text-align: center; line-height: 1.2; }
+                  .fraction-numerator { border-bottom: 1px solid; padding-bottom: 2px; }
+                  .fraction-denominator { font-size: 0.8em; }
+                  @media (max-width: 768px) { .content { padding: 20px; } .question { font-size: 16px; } }
+              </style>
+          </head>
+          <body>
+              <div class="container">
+                  <div class="header">
+                      <h1>📝 AI OCR 문제 분석 결과</h1>
+                      <p>학습용 문제 이미지 분석 결과</p>
+                  </div>
+                  <div class="content">
+                      <div class="problem">
+                          <h3 style="color: #2196F3; margin-top: 0;">문제 1</h3>
+                          <p class="question"><strong>질문:</strong> ${processedQuestionText}</p>
+                          <div style="margin: 15px 0;">
+                              <h4 style="color: #FF9800;">선택지:</h4>
+                              <ul class="choices">
+                                  ${jsonData?.problems?.[0]?.choices?.map(choice => {
+                                      const processedChoiceText = choice.text
+                                          .replace(/³√/g, '<sup>3</sup>√')
+                                          .replace(/⁴√/g, '<sup>4</sup>√')
+                                          .replace(/³/g, '<sup>3</sup>')
+                                          .replace(/⁴/g, '<sup>4</sup>')
+                                          .replace(/₃/g, '<sub>3</sub>')
+                                          .replace(/₄/g, '<sub>4</sub>')
+                                      return `<li class="choice ${choice.id === jsonData?.problems?.[0]?.answer ? 'correct' : ''}">
+                                          <strong>${choice.id}.</strong> ${processedChoiceText}
+                                      </li>`
+                                  }).join('') || '<li class="choice">선택지 정보 없음</li>'}
+                              </ul>
+                          </div>
+                          <div class="answer">
+                              <strong style="color: #1976D2;">정답:</strong> ${jsonData?.problems?.[0]?.answer || '4'}
+                          </div>
+                      </div>
+                      <div class="metadata">
+                          <h4 style="color: #F57C00; margin-top: 0;">📊 분석 정보</h4>
+                          <p><strong>이미지 크기:</strong> ${jsonData?.metadata?.page_width_px || 800} × ${jsonData?.metadata?.page_height_px || 600} px</p>
+                          <p><strong>처리 시간:</strong> ${jsonData?.metadata?.processing_time || '0.5s'}</p>
+                          <p><strong>신뢰도:</strong> ${Math.round((jsonData?.metadata?.confidence || 0.95) * 100)}%</p>
+                      </div>
+                  </div>
               </div>
-              <div style="background: #E3F2FD; padding: 10px; border-radius: 4px; margin-top: 15px;">
-                <strong style="color: #1976D2;">정답:</strong> ${jsonData?.problems?.[0]?.answer || 'B'}
-              </div>
-            </div>
-            <div style="background: #FFF3E0; padding: 15px; border-radius: 8px; margin-top: 20px;">
-              <h4 style="color: #F57C00; margin-top: 0;">📊 분석 정보</h4>
-              <p><strong>이미지 크기:</strong> ${jsonData?.metadata?.page_width_px || 800} × ${jsonData?.metadata?.page_height_px || 600} px</p>
-              <p><strong>처리 시간:</strong> ${jsonData?.metadata?.processing_time || '0.5s'}</p>
-              <p><strong>신뢰도:</strong> ${Math.round((jsonData?.metadata?.confidence || 0.95) * 100)}%</p>
-            </div>
-          </div>
+          </body>
+          </html>
         `,
         timestamp: new Date().toISOString()
       })
