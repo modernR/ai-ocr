@@ -369,10 +369,10 @@ app/
   - 프롬프트: 매 호출마다 새로 생성
   - 상세한 초기화 로그 추가로 디버깅 용이성 향상
 - ✅ **모델 업그레이드 완료**
-  - OpenAI API 모델을 gpt-4o → gpt-5-main으로 업그레이드
-  - OCR API: gpt-5-main 모델 적용
-  - HTML 렌더링 API: gpt-5-main 모델 적용
-  - 최신 GPT-5 모델의 향상된 성능 활용
+  - OpenAI API 모델을 gpt-4o → gpt-5-chat-latest로 업그레이드
+  - OCR API: gpt-5-chat-latest 모델 적용
+  - HTML 렌더링 API: gpt-5-chat-latest 모델 적용
+  - 최신 GPT-5 Chat Latest 모델의 향상된 성능 활용
 
 ### 배포 완료 상태
 - 🚀 **GitHub 푸시 완료** (커밋: 2bf58e9)
