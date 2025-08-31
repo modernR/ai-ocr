@@ -15,28 +15,28 @@ const HTML_RENDER_SYSTEM_PROMPT = `잘 너는 **표준 JSON(v1.1.0)** 문제 객
 수학 기호와 수식을 정확히 렌더링하기 위해 다음 규칙을 반드시 따르세요:
 
 ### 1. 근호 (Root) 처리
-- ³√ → `<sup>3</sup>√` 또는 `∛`
-- ⁴√ → `<sup>4</sup>√` 또는 `∜`
-- √ → `√` (제곱근)
+- ³√ → [sup]3[/sup]√ 또는 ∛
+- ⁴√ → [sup]4[/sup]√ 또는 ∜
+- √ → √ (제곱근)
 
 ### 2. 첨자 (Subscript/Superscript) 처리
-- ³ → `<sup>3</sup>`
-- ⁴ → `<sup>4</sup>`
-- ₁ → `<sub>1</sub>`
-- ₂ → `<sub>2</sub>`
-- ₃ → `<sub>3</sub>`
-- ₄ → `<sub>4</sub>`
+- ³ → [sup]3[/sup]
+- ⁴ → [sup]4[/sup]
+- ₁ → [sub]1[/sub]
+- ₂ → [sub]2[/sub]
+- ₃ → [sub]3[/sub]
+- ₄ → [sub]4[/sub]
 
 ### 3. 분수 처리
-- a/b → `<span style="display: inline-block; vertical-align: middle; text-align: center; line-height: 1.2;"><span style="border-bottom: 1px solid; padding-bottom: 2px;">a</span><br><span style="font-size: 0.8em;">b</span></span>`
+- a/b → [span style="display: inline-block; vertical-align: middle; text-align: center; line-height: 1.2;"][span style="border-bottom: 1px solid; padding-bottom: 2px;"]a[/span][br][span style="font-size: 0.8em;"]b[/span][/span]
 
 ### 4. 수학 연산자
-- ÷ → `÷`
-- × → `×`
-- ± → `±`
-- ≠ → `≠`
-- ≤ → `≤`
-- ≥ → `≥`
+- ÷ → &divide;
+- × → &times;
+- ± → &plusmn;
+- ≠ → &ne;
+- ≤ → &le;
+- ≥ → &ge;
 
 ## 출력 형식
 반드시 완전한 HTML 문서를 생성해야 합니다:
@@ -114,7 +114,7 @@ const HTML_RENDER_SYSTEM_PROMPT = `잘 너는 **표준 JSON(v1.1.0)** 문제 객
 
 ## 수식 변환 예시
 입력: "a>0일 때, ³√(√a/⁴√a) ÷ ⁴√(√a/³√a) × ⁴√(⁴√a/³√a)를 간단히 하면?"
-출력: "a>0일 때, <sup>3</sup>√(√a/<sup>4</sup>√a) ÷ <sup>4</sup>√(√a/<sup>3</sup>√a) × <sup>4</sup>√(<sup>4</sup>√a/<sup>3</sup>√a)를 간단히 하면?"
+출력: "a>0일 때, [sup]3[/sup]√(√a/[sup]4[/sup]√a) ÷ [sup]4[/sup]√(√a/[sup]3[/sup]√a) × [sup]4[/sup]√([sup]4[/sup]√a/[sup]3[/sup]√a)를 간단히 하면?"
 
 ## 처리 단계
 1. JSON 데이터에서 문제 정보 추출
