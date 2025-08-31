@@ -234,12 +234,16 @@ export default function ImageUploader({
   const openImageModal = () => {
     setImageScale(1)
     setShowImageModal(true)
+    // 배경 스크롤 막기
+    document.body.style.overflow = 'hidden'
   }
 
   // 이미지 모달 닫기
   const closeImageModal = () => {
     setShowImageModal(false)
     setImageScale(1)
+    // 배경 스크롤 복원
+    document.body.style.overflow = 'unset'
   }
 
   // 이미지 확대/축소
