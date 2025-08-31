@@ -122,6 +122,18 @@ export async function POST(request) {
 
     console.log('OpenAI Vision API 호출 중...')
 
+    // 이미지 데이터 형식 검증 및 수정
+    let processedImageData = imageData
+    if (!imageData.startsWith('data:image/')) {
+      console.log('이미지 데이터에 data URL 접두사가 없음, 추가 중...')
+      // base64 데이터만 있는 경우 data URL 형식으로 변환
+      if (imageData.match(/^[A-Za-z0-9+/=]+$/)) {
+        processedImageData = `data:image/jpeg;base64,${imageData}`
+      }
+    }
+
+    console.log('처리된 이미지 데이터 시작 부분:', processedImageData.substring(0, 100))
+
     // OpenAI Vision API 호출
     const response = await openai.chat.completions.create({
       model: "gpt-4o",
@@ -140,7 +152,7 @@ export async function POST(request) {
             {
               type: "image_url",
               image_url: {
-                url: imageData,
+                url: processedImageData,
                 detail: "high"
               }
             }
@@ -181,13 +193,31 @@ export async function POST(request) {
   } catch (error) {
     console.error('OCR API 오류:', error)
     
+    // OpenAI API 오류 상세 처리
+    let errorMessage = 'OCR 처리 중 오류가 발생했습니다.'
+    let statusCode = 500
+    
+    if (error.status) {
+      statusCode = error.status
+      if (error.status === 400) {
+        errorMessage = 'OpenAI API: 잘못된 요청입니다. 이미지 형식을 확인해주세요.'
+      } else if (error.status === 401) {
+        errorMessage = 'OpenAI API: 인증 오류입니다. API 키를 확인해주세요.'
+      } else if (error.status === 429) {
+        errorMessage = 'OpenAI API: 요청 한도를 초과했습니다. 잠시 후 다시 시도해주세요.'
+      } else if (error.status === 500) {
+        errorMessage = 'OpenAI API: 서버 오류입니다. 잠시 후 다시 시도해주세요.'
+      }
+    }
+    
     return NextResponse.json(
       { 
-        error: 'OCR 처리 중 오류가 발생했습니다.',
-        details: error.message,
+        error: errorMessage,
+        details: error.message || error.toString(),
+        status: error.status || 500,
         timestamp: new Date().toISOString()
       },
-      { status: 500 }
+      { status: statusCode }
     )
   }
 }
