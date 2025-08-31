@@ -110,24 +110,51 @@ npm run lint
 - **에러 처리**: 타임아웃, 재시도, 상세 오류 메시지
 - **메모리 관리**: Object URL 자동 해제
 
-## 🌐 Vercel 배포
+## 🌐 Vercel 배포 (GitHub 연동)
 
-### 환경 변수 설정
-Vercel 대시보드에서 다음 환경 변수를 설정하세요:
+### 1. GitHub 리포지토리 준비
+```bash
+# 변경사항 커밋 및 푸시
+git add .
+git commit -m "Deploy AI OCR POC to production"
+git push origin main
+```
+
+### 2. Vercel 프로젝트 생성
+1. [Vercel 대시보드](https://vercel.com/dashboard) 접속
+2. **"New Project"** 클릭
+3. GitHub 리포지토리 선택 및 Import
+4. 프로젝트 설정:
+   - **Framework Preset**: Next.js
+   - **Root Directory**: `./` (기본값)
+   - **Build Command**: `npm run build` (기본값)
+   - **Output Directory**: `.next` (기본값)
+
+### 3. 환경 변수 설정
+Vercel 프로젝트 설정에서 Environment Variables 추가:
 
 ```
 OPENAI_API_KEY=your_openai_api_key_here
 NODE_ENV=production
 ```
 
-### 배포 명령어
-```bash
-# Vercel CLI 설치
-npm i -g vercel
+### 4. 자동 배포
+- `main` 브랜치에 푸시할 때마다 자동 배포
+- Pull Request 생성 시 Preview 배포 자동 생성
+- 배포 상태는 Vercel 대시보드에서 확인 가능
 
-# 배포
-vercel --prod
-```
+### 5. 배포 확인사항
+- ✅ **빌드 성공**: Next.js 빌드 오류 없음
+- ✅ **환경 변수**: OpenAI API 키 정상 설정
+- ✅ **API 엔드포인트**: `/api/ocr`, `/api/render` 정상 작동
+- ✅ **정적 파일**: 이미지 리소스 정상 로드
+- ✅ **함수 타임아웃**: OCR 60초, 렌더링 30초 설정
+
+### 🚨 배포 시 주의사항
+- **API 키 보안**: 환경 변수로만 설정, 코드에 하드코딩 금지
+- **함수 제한**: Vercel Hobby 플랜은 10초 제한 (Pro 플랜 권장)
+- **이미지 크기**: 대용량 이미지는 자동 압축되지만 업로드 제한 확인
+- **API 사용량**: OpenAI API 사용량 모니터링 필요
 
 ## 🔧 API 엔드포인트
 
