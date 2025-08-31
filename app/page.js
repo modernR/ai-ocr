@@ -29,7 +29,14 @@ export default function Home() {
   }
 
   // OCR 처리 함수
-  const handleProcess = async () => {
+  const handleProcess = async (event = null) => {
+    if (event) {
+      event.preventDefault()
+      event.stopPropagation()
+    }
+    
+    console.log('handleProcess 호출됨')
+    
     if (!uploadedImage) {
       alert('이미지를 먼저 업로드해주세요.')
       return
@@ -140,7 +147,14 @@ export default function Home() {
   }
 
   // HTML 렌더링 함수
-  const handleRenderHtml = async () => {
+  const handleRenderHtml = async (event = null) => {
+    if (event) {
+      event.preventDefault()
+      event.stopPropagation()
+    }
+    
+    console.log('handleRenderHtml 호출됨')
+    
     if (!jsonResult) return
     
     setIsProcessing(true)
@@ -235,10 +249,8 @@ export default function Home() {
               />
               {/* 1->2 Send 버튼 */}
               <button
-                onClick={(e) => {
-                  e.preventDefault()
-                  handleProcess()
-                }}
+                type="button"
+                onClick={handleProcess}
                 disabled={!uploadedImage || isProcessing || hasProcessed}
                 className={styles.sendButton}
                 title={hasProcessed ? 'Demo에서는 1회만 호출됩니다' : 'OCR 분석 시작'}
@@ -261,10 +273,8 @@ export default function Home() {
               />
               {/* 2->3 Send 버튼 */}
               <button
-                onClick={(e) => {
-                  e.preventDefault()
-                  handleRenderHtml()
-                }}
+                type="button"
+                onClick={handleRenderHtml}
                 disabled={!jsonResult || isProcessing}
                 className={styles.sendButton}
                 title="HTML 렌더링"
