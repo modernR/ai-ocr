@@ -16,6 +16,8 @@ export default function HtmlRenderer({ htmlContent, isLoading }) {
   const [copySuccess, setCopySuccess] = useState(false)
   const contentRef = useRef(null)
   const [mathJaxLoaded, setMathJaxLoaded] = useState(false)
+  const [showToast, setShowToast] = useState(false)
+  const [toastPosition, setToastPosition] = useState({ x: 0, y: 0 })
 
   // HTML 정화 (XSS 방지)
   const sanitizedHtml = useMemo(() => {
@@ -108,12 +110,24 @@ export default function HtmlRenderer({ htmlContent, isLoading }) {
     }
   }, [mathJaxLoaded, htmlContent])
 
-  // HTML 복사 기능
-  const copyToClipboard = async () => {
+  // HTML 복사 기능 (토스트 메시지 포함)
+  const copyToClipboard = async (event) => {
     try {
       await navigator.clipboard.writeText(htmlContent)
       setCopySuccess(true)
-      setTimeout(() => setCopySuccess(false), 2000)
+      
+      // 토스트 위치 설정
+      const rect = event.currentTarget.getBoundingClientRect()
+      setToastPosition({
+        x: rect.left + rect.width / 2,
+        y: rect.top - 10
+      })
+      setShowToast(true)
+      
+      setTimeout(() => {
+        setCopySuccess(false)
+        setShowToast(false)
+      }, 2000)
     } catch (err) {
       console.error('복사 실패:', err)
       alert('복사에 실패했습니다.')
@@ -134,7 +148,7 @@ export default function HtmlRenderer({ htmlContent, isLoading }) {
       <div className={styles.container}>
         <div className={styles.loadingState}>
           <div className={styles.spinner}></div>
-          <p>HTML로 렌더링하고 있습니다...</p>
+          <p>AI가 JSON으로 HTML파일을 생성하고 있습니다...</p>
           <div className={styles.loadingSteps}>
             <div className={styles.step}>📄 JSON 데이터 파싱</div>
             <div className={styles.step}>🎨 HTML 구조 생성</div>
@@ -158,6 +172,11 @@ export default function HtmlRenderer({ htmlContent, isLoading }) {
 
   return (
     <div className={styles.container}>
+      {/* 안내 문구 추가 */}
+      <div className={styles.notice}>
+        <small>이미지 처리는 Demo에서 구현되지 않아 임의 처리됩니다</small>
+      </div>
+
       {/* 헤더 */}
       <div className={styles.header}>
         <div className={styles.headerLeft}>
@@ -168,17 +187,17 @@ export default function HtmlRenderer({ htmlContent, isLoading }) {
         <div className={styles.headerRight}>
           <button
             onClick={openInNewWindow}
-            className={styles.controlButton}
-            title="새 창에서 열기"
+            className={styles.iconButton}
+            title="확장해 보기"
           >
-            🔗
+            <img src="/new_tab.png" alt="New Tab" />
           </button>
           <button
             onClick={copyToClipboard}
-            className={`${styles.controlButton} ${styles.copyButton}`}
-            title="HTML 복사"
+            className={styles.iconButton}
+            title="내용 복사하기"
           >
-            {copySuccess ? '✓' : '📋'}
+            <img src="/copy.png" alt="Copy" />
           </button>
         </div>
       </div>
@@ -205,6 +224,21 @@ export default function HtmlRenderer({ htmlContent, isLoading }) {
           <small>⚠️ 보안상 일부 스크립트는 실행되지 않습니다.</small>
         </div>
       </div>
+
+      {/* 토스트 메시지 */}
+      {showToast && (
+        <div 
+          className={styles.toast}
+          style={{ 
+            position: 'fixed',
+            left: `${toastPosition.x}px`,
+            top: `${toastPosition.y}px`,
+            transform: 'translateX(-50%)'
+          }}
+        >
+          내용이 복사되었습니다!
+        </div>
+      )}
     </div>
   )
 }

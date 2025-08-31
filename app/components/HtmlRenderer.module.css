@@ -6,6 +6,17 @@
   border: 1px solid #e2e8f0;
   overflow: hidden;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  position: relative;
+}
+
+/* 안내 문구 */
+.notice {
+  padding: 0.5rem 1rem;
+  background: #f7fafc;
+  border-bottom: 1px solid #e2e8f0;
+  text-align: center;
+  color: #718096;
+  font-size: 0.875rem;
 }
 
 /* 헤더 */
@@ -43,6 +54,61 @@
 .headerRight {
   display: flex;
   gap: 0.5rem;
+}
+
+.iconButton {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.iconButton:hover {
+  background: #f7fafc;
+  border-color: #cbd5e0;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.iconButton:active {
+  transform: translateY(0);
+  box-shadow: none;
+}
+
+.iconButton img {
+  width: 20px;
+  height: 20px;
+}
+
+/* 토스트 메시지 */
+.toast {
+  background: #4a5568;
+  color: white;
+  padding: 0.75rem 1.5rem;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  font-size: 0.875rem;
+  font-weight: 500;
+  z-index: 1000;
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
 }
 
 .controlButton {

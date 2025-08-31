@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import styles from './JsonViewer.module.css'
 
 /**
@@ -14,6 +14,8 @@ import styles from './JsonViewer.module.css'
 export default function JsonViewer({ jsonData, isLoading }) {
   const [expandedKeys, setExpandedKeys] = useState(new Set())
   const [copySuccess, setCopySuccess] = useState(false)
+  const [showToast, setShowToast] = useState(false)
+  const [toastPosition, setToastPosition] = useState({ x: 0, y: 0 })
 
   // 키 확장/축소 토글
   const toggleExpand = (keyPath) => {
@@ -51,15 +53,176 @@ export default function JsonViewer({ jsonData, isLoading }) {
     return keys
   }
 
-  // JSON 복사 기능
-  const copyToClipboard = async () => {
+  // JSON 복사 기능 (토스트 메시지 포함)
+  const copyToClipboard = async (event) => {
     try {
       await navigator.clipboard.writeText(JSON.stringify(jsonData, null, 2))
       setCopySuccess(true)
-      setTimeout(() => setCopySuccess(false), 2000)
+      
+      // 토스트 위치 설정
+      const rect = event.currentTarget.getBoundingClientRect()
+      setToastPosition({
+        x: rect.left + rect.width / 2,
+        y: rect.top - 10
+      })
+      setShowToast(true)
+      
+      setTimeout(() => {
+        setCopySuccess(false)
+        setShowToast(false)
+      }, 2000)
     } catch (err) {
       console.error('복사 실패:', err)
       alert('복사에 실패했습니다.')
+    }
+  }
+
+  // 새 탭에서 JSON 뷰어 열기
+  const openInNewTab = () => {
+    const jsonViewerHTML = `
+<!DOCTYPE html>
+<html>
+<head>
+  <title>JSON Viewer</title>
+  <style>
+    body { font-family: monospace; padding: 20px; background: #f5f5f5; }
+    .container { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+    .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
+    .controls { display: flex; gap: 10px; }
+    .button { padding: 8px 16px; border: 1px solid #ddd; background: white; cursor: pointer; border-radius: 4px; font-size: 14px; }
+    .button:hover { background: #f0f0f0; }
+    .button img { width: 16px; height: 16px; vertical-align: middle; }
+    .json-content { white-space: pre-wrap; font-size: 14px; line-height: 1.5; }
+    .key { color: #d73a49; }
+    .string { color: #032f62; }
+    .number { color: #005cc5; }
+    .boolean { color: #e36209; }
+    .null { color: #6f42c1; }
+    .bracket { color: #666; cursor: pointer; user-select: none; }
+    .toggle { color: #0969da; font-weight: bold; margin: 0 5px; }
+    .collapsed { display: none; }
+    .item-count { color: #999; font-size: 12px; margin-left: 5px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h2>JSON Viewer</h2>
+      <div class="controls">
+        <button class="button" onclick="expandAll()" title="펼쳐보기">
+          <img src="/plus.png" alt="Expand"> 모두 펼치기
+        </button>
+        <button class="button" onclick="collapseAll()" title="접어두기">
+          <img src="/minus.png" alt="Collapse"> 모두 접기
+        </button>
+        <button class="button" onclick="copyJSON()" title="내용 복사하기">
+          <img src="/copy.png" alt="Copy"> 복사
+        </button>
+      </div>
+    </div>
+    <div class="json-content" id="json-content"></div>
+  </div>
+  <script>
+    const jsonData = ${JSON.stringify(jsonData, null, 2)};
+    
+    function renderJSON(data, container, level = 0) {
+      container.innerHTML = formatJSON(data, '', level);
+      addToggleListeners();
+    }
+    
+    function formatJSON(data, path, level) {
+      if (data === null) return '<span class="null">null</span>';
+      if (typeof data === 'boolean') return '<span class="boolean">' + data + '</span>';
+      if (typeof data === 'number') return '<span class="number">' + data + '</span>';
+      if (typeof data === 'string') return '<span class="string">"' + escapeHtml(data) + '"</span>';
+      
+      if (Array.isArray(data)) {
+        if (data.length === 0) return '[]';
+        let html = '<span class="bracket" data-path="' + path + '">[<span class="toggle">−</span></span>';
+        html += '<div class="content" data-path="' + path + '">';
+        data.forEach((item, index) => {
+          html += '<div style="margin-left: 20px;">' + index + ': ' + formatJSON(item, path + '[' + index + ']', level + 1);
+          if (index < data.length - 1) html += ',';
+          html += '</div>';
+        });
+        html += '</div><span class="bracket">]</span>';
+        return html;
+      }
+      
+      if (typeof data === 'object') {
+        const keys = Object.keys(data);
+        if (keys.length === 0) return '{}';
+        let html = '<span class="bracket" data-path="' + path + '">{<span class="toggle">−</span></span>';
+        html += '<div class="content" data-path="' + path + '">';
+        keys.forEach((key, index) => {
+          const keyPath = path ? path + '.' + key : key;
+          html += '<div style="margin-left: 20px;"><span class="key">"' + key + '"</span>: ' + formatJSON(data[key], keyPath, level + 1);
+          if (index < keys.length - 1) html += ',';
+          html += '</div>';
+        });
+        html += '</div><span class="bracket">}</span>';
+        return html;
+      }
+      
+      return String(data);
+    }
+    
+    function escapeHtml(text) {
+      const map = {'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'};
+      return text.replace(/[&<>"']/g, m => map[m]);
+    }
+    
+    function addToggleListeners() {
+      document.querySelectorAll('.bracket[data-path]').forEach(bracket => {
+        bracket.addEventListener('click', function() {
+          const path = this.getAttribute('data-path');
+          const content = document.querySelector('.content[data-path="' + path + '"]');
+          const toggle = this.querySelector('.toggle');
+          if (content.classList.contains('collapsed')) {
+            content.classList.remove('collapsed');
+            toggle.textContent = '−';
+          } else {
+            content.classList.add('collapsed');
+            toggle.textContent = '+';
+          }
+        });
+      });
+    }
+    
+    function expandAll() {
+      document.querySelectorAll('.content').forEach(content => {
+        content.classList.remove('collapsed');
+      });
+      document.querySelectorAll('.toggle').forEach(toggle => {
+        toggle.textContent = '−';
+      });
+    }
+    
+    function collapseAll() {
+      document.querySelectorAll('.content').forEach(content => {
+        content.classList.add('collapsed');
+      });
+      document.querySelectorAll('.toggle').forEach(toggle => {
+        toggle.textContent = '+';
+      });
+    }
+    
+    function copyJSON() {
+      navigator.clipboard.writeText(JSON.stringify(jsonData, null, 2)).then(() => {
+        alert('내용이 복사되었습니다!');
+      });
+    }
+    
+    // 초기 렌더링
+    renderJSON(jsonData, document.getElementById('json-content'));
+  </script>
+</body>
+</html>`;
+    
+    const newWindow = window.open('', '_blank')
+    if (newWindow) {
+      newWindow.document.write(jsonViewerHTML)
+      newWindow.document.close()
     }
   }
 
@@ -205,6 +368,11 @@ export default function JsonViewer({ jsonData, isLoading }) {
 
   return (
     <div className={styles.container}>
+      {/* 안내 문구 추가 */}
+      <div className={styles.notice}>
+        <small>이미지 처리는 Demo에서 구현되지 않아 임의 처리됩니다</small>
+      </div>
+
       {/* 헤더 */}
       <div className={styles.header}>
         <div className={styles.headerLeft}>
@@ -216,35 +384,45 @@ export default function JsonViewer({ jsonData, isLoading }) {
         
         <div className={styles.headerRight}>
           <button
-            onClick={() => toggleExpandAll(true)}
-            className={styles.controlButton}
-            title="모두 펼치기"
+            onClick={openInNewTab}
+            className={styles.iconButton}
+            title="확장해 보기"
           >
-            ⊞
-          </button>
-          <button
-            onClick={() => toggleExpandAll(false)}
-            className={styles.controlButton}
-            title="모두 접기"
-          >
-            ⊟
+            <img src="/new_tab.png" alt="New Tab" />
           </button>
           <button
             onClick={copyToClipboard}
-            className={`${styles.controlButton} ${styles.copyButton}`}
-            title="JSON 복사"
+            className={styles.iconButton}
+            title="내용 복사하기"
           >
-            {copySuccess ? '✓' : '📋'}
+            <img src="/copy.png" alt="Copy" />
           </button>
         </div>
       </div>
 
-      {/* JSON 내용 */}
+      {/* JSON 내용 - 단순 출력 */}
       <div className={styles.jsonContent}>
         <div className={styles.jsonWrapper}>
-          {renderValue(jsonData, '', 0)}
+          <pre className={styles.jsonPre}>
+            {JSON.stringify(jsonData, null, 2)}
+          </pre>
         </div>
       </div>
+
+      {/* 토스트 메시지 */}
+      {showToast && (
+        <div 
+          className={styles.toast}
+          style={{ 
+            position: 'fixed',
+            left: `${toastPosition.x}px`,
+            top: `${toastPosition.y}px`,
+            transform: 'translateX(-50%)'
+          }}
+        >
+          내용이 복사되었습니다!
+        </div>
+      )}
 
       {/* 푸터 정보 */}
       <div className={styles.footer}>
@@ -257,3 +435,4 @@ export default function JsonViewer({ jsonData, isLoading }) {
     </div>
   )
 }
+

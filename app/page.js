@@ -285,7 +285,7 @@ export default function Home() {
                 onClick={handleProcess}
                 disabled={!uploadedImage || isProcessing || hasProcessed}
                 className={styles.sendButton}
-                title={hasProcessed ? 'Demo에서는 1회만 호출됩니다' : 'OCR 분석 시작'}
+                title={hasProcessed ? 'Demo에서는 1회만 호출됩니다' : 'API 호출하기'}
               >
                 <img src="/send_btn.png" alt="Send" className={styles.sendButtonIcon} />
               </button>
@@ -309,7 +309,7 @@ export default function Home() {
                 onClick={handleRenderHtml}
                 disabled={!jsonResult || isProcessing}
                 className={styles.sendButton}
-                title="HTML 렌더링"
+                title="API 호출하기"
               >
                 <img src="/send_btn.png" alt="Send" className={styles.sendButtonIcon} />
               </button>
