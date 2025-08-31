@@ -2,7 +2,9 @@ import { NextResponse } from 'next/server'
 import OpenAI from 'openai'
 
 // 프롬프트를 코드에 직접 포함 (Vercel 서버리스 환경 대응)
-const SYSTEM_PROMPT = `당신은 시험지/교재 이미지를 분석해 **표준 JSON(v1.1.0)** 으로 반환하는 추출기다.
+const SYSTEM_PROMPT = `중요한 문제이니 주의깊게 살펴보고 처리해줘
+
+당신은 시험지/교재 이미지를 분석해 **표준 JSON(v1.1.0)** 으로 반환하는 추출기다.
 중요: **설명·해설·사고과정 없이 JSON만** 출력한다.
 
 
@@ -91,7 +93,9 @@ const SYSTEM_PROMPT = `당신은 시험지/교재 이미지를 분석해 **표�
 11) 배열 필드는 비어도 []로 반환. null은 명시된 필드에서만 허용.
 12) **JSON 한 덩어리만** 출력(주석/설명 금지).`
 
-const USER_PROMPT_TEMPLATE = `다음 이미지를 표준 JSON(v1.1.0)으로 추출해줘.
+const USER_PROMPT_TEMPLATE = `중요한 문제이니 주의깊게 살펴보고 처리해줘
+
+다음 이미지를 표준 JSON(v1.1.0)으로 추출해줘.
 - 한국어 유지, OCR 원문 보존.
 - 결과는 JSON만.
 

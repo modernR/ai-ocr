@@ -357,6 +357,11 @@ app/
   - HTML 렌더링 API에서 gpt-4.1 → gpt-4o 모델로 변경
   - OCR API는 이미 gpt-4o 모델 사용 중
   - 모든 API에서 최신 gpt-4o 모델 통일 적용
+- ✅ **프롬프트 강화 완료**
+  - 모든 API 프롬프트 맨 앞에 "중요한 문제이니 주의깊게 살펴보고 처리해줘" 문장 추가
+  - OCR API: system_prompt.txt, user_prompt_template.txt, route.js 내 프롬프트 모두 업데이트
+  - HTML 렌더링 API: html_render_system_prompt.txt, route.js 내 프롬프트 모두 업데이트
+  - AI 모델의 주의력과 정확도 향상을 위한 프롬프트 강화 완료
 
 ### 배포 완료 상태
 - 🚀 **GitHub 푸시 완료** (커밋: 2bf58e9)
@@ -388,6 +393,7 @@ app/
 - ✅ Phase 14: 프롬프트 구조 최적화 작업 완료
 - ✅ Phase 15: 프롬프트 간소화 작업 완료
 - ✅ Phase 16: 프롬프트 최신화 및 모델 업데이트 작업 완료
+- ✅ Phase 17: 프롬프트 강화 작업 완료
 - 📋 다음: 프로덕션 환경에서 최종 테스트 및 모니터링
 
 ---

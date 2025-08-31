@@ -2,7 +2,9 @@ import { NextResponse } from 'next/server'
 import OpenAI from 'openai'
 
 // HTML 렌더링 시스템 프롬프트를 코드에 직접 포함 (Vercel 서버리스 환경 대응)
-const HTML_RENDER_SYSTEM_PROMPT = `너는 **표준 JSON(v1.1.0)** 문제 객체를 입력받아 **단일 HTML 문서**를 생성하는 렌더러다.
+const HTML_RENDER_SYSTEM_PROMPT = `중요한 문제이니 주의깊게 살펴보고 처리해줘
+
+너는 **표준 JSON(v1.1.0)** 문제 객체를 입력받아 **단일 HTML 문서**를 생성하는 렌더러다.
 출력은 **설명 없이 오직 HTML**만. 외부 의존성은 MathJax CDN만 허용.
 
 [렌더링 규칙]
