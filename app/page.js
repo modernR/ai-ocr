@@ -87,19 +87,22 @@ export default function Home() {
         
         clearTimeout(timeoutId)
         
-        if (!response.ok) {
-          const errorText = await response.text()
-          throw new Error(`API 호출 실패 (${response.status}): ${errorText}`)
-        }
-        
         const result = await response.json()
+        
+        if (!response.ok) {
+          // API에서 오류 응답을 JSON으로 반환하는 경우
+          const errorMessage = result.error || result.details || `HTTP ${response.status} 오류`
+          throw new Error(errorMessage)
+        }
         
         if (result.success && result.data) {
           setJsonResult(result.data)
           setCurrentStep('json')
           setHasProcessed(true)
         } else {
-          throw new Error(result.error || 'OCR 처리 결과가 올바르지 않습니다.')
+          // API 응답은 성공했지만 처리 결과에 오류가 있는 경우
+          const errorMessage = result.error || result.details || 'OCR 처리 결과가 올바르지 않습니다.'
+          throw new Error(errorMessage)
         }
       } catch (fetchError) {
         clearTimeout(timeoutId)
@@ -144,18 +147,21 @@ export default function Home() {
         
         clearTimeout(timeoutId)
         
-        if (!response.ok) {
-          const errorText = await response.text()
-          throw new Error(`API 호출 실패 (${response.status}): ${errorText}`)
-        }
-        
         const result = await response.json()
+        
+        if (!response.ok) {
+          // API에서 오류 응답을 JSON으로 반환하는 경우
+          const errorMessage = result.error || result.details || `HTTP ${response.status} 오류`
+          throw new Error(errorMessage)
+        }
         
         if (result.success && result.html) {
           setHtmlResult(result.html)
           setCurrentStep('html')
         } else {
-          throw new Error(result.error || 'HTML 렌더링 결과가 올바르지 않습니다.')
+          // API 응답은 성공했지만 처리 결과에 오류가 있는 경우
+          const errorMessage = result.error || result.details || 'HTML 렌더링 결과가 올바르지 않습니다.'
+          throw new Error(errorMessage)
         }
       } catch (fetchError) {
         clearTimeout(timeoutId)
