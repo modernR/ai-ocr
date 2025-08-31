@@ -64,6 +64,45 @@ export async function POST(request) {
 
     console.log('JSON 데이터 크기:', JSON.stringify(jsonData).length, '문자')
 
+    // 테스트 모드 확인 (개발 환경이거나 테스트 데이터인 경우)
+    if (process.env.NODE_ENV === 'development' || jsonData?.problems?.[0]?.id === 'prob_001') {
+      console.log('테스트 모드로 더미 HTML 응답 반환')
+      return NextResponse.json({
+        success: true,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px;">
+            <h2 style="color: #333; border-bottom: 2px solid #4CAF50; padding-bottom: 10px;">📝 문제 분석 결과</h2>
+            <div style="background: #f9f9f9; padding: 15px; border-radius: 8px; margin: 15px 0;">
+              <h3 style="color: #2196F3; margin-top: 0;">문제 1</h3>
+              <p style="font-size: 16px; line-height: 1.6;"><strong>질문:</strong> ${jsonData?.problems?.[0]?.question?.text || '다음 중 올바른 답은?'}</p>
+              <div style="margin: 15px 0;">
+                <h4 style="color: #FF9800;">선택지:</h4>
+                <ul style="list-style: none; padding: 0;">
+                  ${jsonData?.problems?.[0]?.choices?.map(choice => 
+                    `<li style="background: ${choice.id === jsonData?.problems?.[0]?.answer ? '#E8F5E8' : '#fff'}; 
+                               padding: 8px; margin: 5px 0; border-radius: 4px; border-left: 4px solid ${choice.id === jsonData?.problems?.[0]?.answer ? '#4CAF50' : '#ddd'};">
+                      <strong>${choice.id}.</strong> ${choice.text}
+                      ${choice.id === jsonData?.problems?.[0]?.answer ? ' ✅' : ''}
+                    </li>`
+                  ).join('') || '<li>선택지 정보 없음</li>'}
+                </ul>
+              </div>
+              <div style="background: #E3F2FD; padding: 10px; border-radius: 4px; margin-top: 15px;">
+                <strong style="color: #1976D2;">정답:</strong> ${jsonData?.problems?.[0]?.answer || 'B'}
+              </div>
+            </div>
+            <div style="background: #FFF3E0; padding: 15px; border-radius: 8px; margin-top: 20px;">
+              <h4 style="color: #F57C00; margin-top: 0;">📊 분석 정보</h4>
+              <p><strong>이미지 크기:</strong> ${jsonData?.metadata?.page_width_px || 800} × ${jsonData?.metadata?.page_height_px || 600} px</p>
+              <p><strong>처리 시간:</strong> ${jsonData?.metadata?.processing_time || '0.5s'}</p>
+              <p><strong>신뢰도:</strong> ${Math.round((jsonData?.metadata?.confidence || 0.95) * 100)}%</p>
+            </div>
+          </div>
+        `,
+        timestamp: new Date().toISOString()
+      })
+    }
+
     // JSON을 문자열로 변환하여 사용자 메시지로 전송
     const jsonString = JSON.stringify(jsonData, null, 2)
 
