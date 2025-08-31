@@ -173,7 +173,7 @@ export async function POST(request) {
     console.log('메시지 배열 생성 완료 (시스템 + 사용자 메시지)')
     
     const response = await openai.chat.completions.create({
-      model: "gpt-4o",
+      model: "gpt-5-main",
       messages: messages,
       max_tokens: 4000,
       temperature: 0.1
