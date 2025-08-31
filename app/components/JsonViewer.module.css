@@ -24,7 +24,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1rem 1.5rem;
+  padding: 1rem;
   background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
   border-bottom: 1px solid #e2e8f0;
 }
@@ -121,7 +121,7 @@
 .jsonContent {
   max-height: 500px;
   overflow-y: auto;
-  padding: 1rem;
+  padding: 0.75rem;
   background: #fafafa;
 }
 
@@ -323,7 +323,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 3rem 2rem;
+  padding: 3rem 1rem;
   text-align: center;
   min-height: 400px;
 }
@@ -350,7 +350,7 @@
 
 /* 푸터 */
 .footer {
-  padding: 1rem 1.5rem;
+  padding: 1rem;
   background: #f7fafc;
   border-top: 1px solid #e2e8f0;
 }

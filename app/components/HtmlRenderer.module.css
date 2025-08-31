@@ -24,7 +24,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1rem 1.5rem;
+  padding: 1rem;
   background: linear-gradient(135deg, #f0fff4 0%, #c6f6d5 100%);
   border-bottom: 1px solid #e2e8f0;
 }
@@ -149,9 +149,9 @@
 }
 
 .renderFrame {
-  padding: 1.5rem;
+  padding: 1rem;
   background: white;
-  margin: 1rem;
+  margin: 0.75rem;
   border-radius: 8px;
   border: 1px solid #e2e8f0;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
@@ -323,7 +323,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 3rem 2rem;
+  padding: 3rem 1rem;
   text-align: center;
   min-height: 400px;
 }
@@ -350,7 +350,7 @@
 
 /* 푸터 */
 .footer {
-  padding: 1rem 1.5rem;
+  padding: 1rem;
   background: #f0fff4;
   border-top: 1px solid #e2e8f0;
 }
