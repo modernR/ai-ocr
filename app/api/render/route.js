@@ -63,39 +63,254 @@ const HTML_RENDER_SYSTEM_PROMPT = `잘 너는 **표준 JSON(v1.1.0)** 문제 객
         };
     </script>
     <style>
-        /* 전문적인 CSS 스타일 */
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; }
-        .container { max-width: 800px; margin: 0 auto; background: white; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); overflow: hidden; }
-        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; text-align: center; }
-        .content { padding: 30px; }
-        .problem { background: #f8f9fa; border-left: 4px solid #007bff; padding: 20px; margin: 20px 0; border-radius: 5px; }
-        .question { font-size: 18px; font-weight: 600; color: #333; margin-bottom: 15px; line-height: 1.6; }
-        .question sup, .question sub { font-size: 0.7em; }
-        .choices { list-style: none; padding: 0; }
-        .choice { background: white; margin: 8px 0; padding: 12px; border-radius: 5px; border: 1px solid #e9ecef; transition: all 0.3s ease; line-height: 1.5; }
-        .choice:hover { box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        .choice.correct { background: #d4edda; border-color: #28a745; }
-        .choice.correct::after { content: " ✅"; color: #28a745; font-weight: bold; }
-        .answer { background: #d1ecf1; border: 1px solid #bee5eb; padding: 15px; border-radius: 5px; margin: 20px 0; }
-        .metadata { background: #e2e3e5; padding: 15px; border-radius: 5px; margin-top: 20px; font-size: 14px; }
-        .solution { background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin: 20px 0; }
-        .step { margin: 5px 0; padding: 5px 0; line-height: 1.5; }
+        /* 2번 영역 확장화면 레이아웃에 맞춘 CSS 스타일 */
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif; 
+            margin: 0; 
+            padding: 0; 
+            background: #fafafa; 
+            line-height: 1.6;
+            color: #2d3748;
+        }
+        .container { 
+            width: 100%; 
+            background: white; 
+            border-radius: 12px; 
+            border: 1px solid #e2e8f0; 
+            overflow: hidden; 
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); 
+            position: relative; 
+        }
+        .content { 
+            padding: 0.5rem; 
+            background: #fafafa; 
+        }
+        .renderFrame { 
+            padding: 0.5rem; 
+            background: white; 
+            margin: 0.5rem; 
+            border-radius: 8px; 
+            border: 1px solid #e2e8f0; 
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); 
+        }
+        .renderedHtml { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif; 
+            line-height: 1.6; 
+            color: #2d3748; 
+        }
+        .problem { 
+            background: #f8f9fa; 
+            border-left: 4px solid #007bff; 
+            padding: 20px; 
+            margin: 20px 0; 
+            border-radius: 5px; 
+        }
+        .question { 
+            font-size: 18px; 
+            font-weight: 600; 
+            color: #333; 
+            margin-bottom: 15px; 
+            line-height: 1.6; 
+        }
+        .question sup, .question sub { 
+            font-size: 0.7em; 
+        }
+        .choices { 
+            list-style: none; 
+            padding: 0; 
+        }
+        .choice { 
+            background: white; 
+            margin: 8px 0; 
+            padding: 12px; 
+            border-radius: 5px; 
+            border: 1px solid #e9ecef; 
+            transition: all 0.3s ease; 
+            line-height: 1.5; 
+        }
+        .choice:hover { 
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1); 
+        }
+        .choice.correct { 
+            background: #d4edda; 
+            border-color: #28a745; 
+        }
+        .choice.correct::after { 
+            content: " ✅"; 
+            color: #28a745; 
+            font-weight: bold; 
+        }
+        .answer { 
+            background: #d1ecf1; 
+            border: 1px solid #bee5eb; 
+            padding: 15px; 
+            border-radius: 5px; 
+            margin: 20px 0; 
+        }
+        .metadata { 
+            background: #e2e3e5; 
+            padding: 15px; 
+            border-radius: 5px; 
+            margin-top: 20px; 
+            font-size: 14px; 
+        }
+        .solution { 
+            background: #fff3cd; 
+            border: 1px solid #ffeaa7; 
+            padding: 15px; 
+            border-radius: 5px; 
+            margin: 20px 0; 
+        }
+        .step { 
+            margin: 5px 0; 
+            padding: 5px 0; 
+            line-height: 1.5; 
+        }
         /* 수학 기호 스타일 */
-        .math-symbol { font-family: 'Times New Roman', serif; }
-        .fraction { display: inline-block; vertical-align: middle; text-align: center; line-height: 1.2; }
-        .fraction-numerator { border-bottom: 1px solid; padding-bottom: 2px; }
-        .fraction-denominator { font-size: 0.8em; }
-        @media (max-width: 768px) { .content { padding: 20px; } .question { font-size: 16px; } }
+        .math-symbol { 
+            font-family: 'Times New Roman', serif; 
+        }
+        .fraction { 
+            display: inline-block; 
+            vertical-align: middle; 
+            text-align: center; 
+            line-height: 1.2; 
+        }
+        .fraction-numerator { 
+            border-bottom: 1px solid; 
+            padding-bottom: 2px; 
+        }
+        .fraction-denominator { 
+            font-size: 0.8em; 
+        }
+        /* 렌더링된 HTML 내부 요소 스타일 */
+        .renderedHtml h1,
+        .renderedHtml h2,
+        .renderedHtml h3,
+        .renderedHtml h4,
+        .renderedHtml h5,
+        .renderedHtml h6 {
+            margin: 1rem 0 0.5rem 0;
+            color: #2d3748;
+            font-weight: 600;
+        }
+        .renderedHtml h1 { font-size: 1.8rem; }
+        .renderedHtml h2 { font-size: 1.5rem; }
+        .renderedHtml h3 { font-size: 1.3rem; }
+        .renderedHtml h4 { font-size: 1.1rem; }
+        .renderedHtml p {
+            margin: 0.75rem 0;
+            line-height: 1.6;
+        }
+        .renderedHtml ul,
+        .renderedHtml ol {
+            margin: 0.75rem 0;
+            padding-left: 1.5rem;
+        }
+        .renderedHtml li {
+            margin: 0.25rem 0;
+        }
+        .renderedHtml table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+        .renderedHtml th,
+        .renderedHtml td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .renderedHtml th {
+            background: #f7fafc;
+            font-weight: 600;
+            color: #4a5568;
+        }
+        .renderedHtml tr:last-child td {
+            border-bottom: none;
+        }
+        .renderedHtml code {
+            background: #f7fafc;
+            padding: 0.2rem 0.4rem;
+            border-radius: 4px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 0.9em;
+            color: #e53e3e;
+        }
+        .renderedHtml pre {
+            background: #f7fafc;
+            padding: 1rem;
+            border-radius: 6px;
+            overflow-x: auto;
+            margin: 1rem 0;
+            border: 1px solid #e2e8f0;
+        }
+        .renderedHtml pre code {
+            background: none;
+            padding: 0;
+            color: #2d3748;
+        }
+        .renderedHtml blockquote {
+            border-left: 4px solid #667eea;
+            padding-left: 1rem;
+            margin: 1rem 0;
+            color: #4a5568;
+            font-style: italic;
+        }
+        .renderedHtml img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 6px;
+            margin: 0.5rem 0;
+        }
+        .renderedHtml a {
+            color: #667eea;
+            text-decoration: none;
+        }
+        .renderedHtml a:hover {
+            text-decoration: underline;
+        }
+        @media (max-width: 768px) { 
+            .content { padding: 0.75rem; } 
+            .question { font-size: 16px; } 
+            .renderFrame { 
+                margin: 0.75rem; 
+                padding: 1rem; 
+            }
+            .renderedHtml h1 { font-size: 1.5rem; }
+            .renderedHtml h2 { font-size: 1.3rem; }
+            .renderedHtml h3 { font-size: 1.1rem; }
+            .renderedHtml h4 { font-size: 1rem; }
+        }
+        @media (max-width: 480px) {
+            .renderFrame { 
+                margin: 0.5rem; 
+                padding: 0.75rem; 
+            }
+            .renderedHtml { 
+                font-size: 0.9rem; 
+            }
+            .renderedHtml table {
+                font-size: 0.8rem;
+            }
+            .renderedHtml th,
+            .renderedHtml td {
+                padding: 0.5rem;
+            }
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="header">
-            <h1>📝 AI OCR 문제 분석 결과</h1>
-            <p>학습용 문제 이미지 분석 결과</p>
-        </div>
         <div class="content">
-            <!-- 문제 내용이 여기에 렌더링됨 -->
+            <div class="renderFrame">
+                <div class="renderedHtml">
+                    <!-- 문제 내용이 여기에 렌더링됨 -->
+                </div>
+            </div>
         </div>
     </div>
 </body>
