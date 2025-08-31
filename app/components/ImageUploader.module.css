@@ -328,30 +328,30 @@
 
 /* 이미지 모달 */
 .imageModal {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background: rgba(0, 0, 0, 0.8);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 999999;
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  background: rgba(0, 0, 0, 0.8) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  z-index: 999999 !important;
   animation: fadeIn 0.3s ease;
 }
 
 .modalContent {
-  background: white;
+  background: white !important;
   border-radius: 12px;
   max-width: 95vw;
   max-height: 95vh;
-  display: flex;
-  flex-direction: column;
+  display: flex !important;
+  flex-direction: column !important;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
   animation: slideIn 0.3s ease;
-  z-index: 1000000;
-  position: relative;
+  z-index: 1000000 !important;
+  position: relative !important;
 }
 
 .modalHeader {

@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useEffect, Fragment } from 'react'
+import { createPortal } from 'react-dom'
 import styles from './ImageUploader.module.css'
 
 /**
@@ -268,6 +269,7 @@ export default function ImageUploader({
   }
 
   return (
+    <Fragment>
     <div className={styles.container}>
       {!uploadedImage ? (
         // 업로드 영역
@@ -356,42 +358,45 @@ export default function ImageUploader({
         </div>
       )}
 
-      {/* 이미지 모달 */}
-      {showImageModal && uploadedImage && (
-        <div className={styles.imageModal} onClick={closeImageModal}>
-          <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
-            <div className={styles.modalHeader}>
-              <h3>이미지 원본 보기</h3>
-              <div className={styles.zoomControls}>
-                <button onClick={handleZoomOut} className={styles.zoomButton} title="축소">
-                  <span>−</span>
-                </button>
-                <button onClick={handleZoomReset} className={styles.zoomButton} title="원본 크기">
-                  <span>{Math.round(imageScale * 100)}%</span>
-                </button>
-                <button onClick={handleZoomIn} className={styles.zoomButton} title="확대">
-                  <span>+</span>
-                </button>
-              </div>
-              <button onClick={closeImageModal} className={styles.closeButton} title="닫기">
-                <span>✕</span>
+
+    </div>
+    {/* Portal을 사용하여 모달을 body에 직접 렌더링 */}
+    {showImageModal && uploadedImage && typeof document !== 'undefined' && createPortal(
+      <div className={styles.imageModal} onClick={closeImageModal}>
+        <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+          <div className={styles.modalHeader}>
+            <h3>이미지 원본 보기</h3>
+            <div className={styles.zoomControls}>
+              <button onClick={handleZoomOut} className={styles.zoomButton} title="축소">
+                <span>−</span>
+              </button>
+              <button onClick={handleZoomReset} className={styles.zoomButton} title="원본 크기">
+                <span>{Math.round(imageScale * 100)}%</span>
+              </button>
+              <button onClick={handleZoomIn} className={styles.zoomButton} title="확대">
+                <span>+</span>
               </button>
             </div>
-            <div className={styles.modalBody}>
-              <img
-                src={uploadedImage.dataUrl}
-                alt="원본 이미지"
-                className={styles.modalImage}
-                style={{ 
-                  transform: `scale(${imageScale})`,
-                  maxWidth: 'none',
-                  maxHeight: 'none'
-                }}
-              />
-            </div>
+            <button onClick={closeImageModal} className={styles.closeButton} title="닫기">
+              <span>✕</span>
+            </button>
+          </div>
+          <div className={styles.modalBody}>
+            <img
+              src={uploadedImage.dataUrl}
+              alt="원본 이미지"
+              className={styles.modalImage}
+              style={{ 
+                transform: `scale(${imageScale})`,
+                maxWidth: 'none',
+                maxHeight: 'none'
+              }}
+            />
           </div>
         </div>
-      )}
-    </div>
+      </div>,
+      document.body
+    )}
+    </Fragment>
   )
 }
