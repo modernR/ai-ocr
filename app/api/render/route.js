@@ -1,31 +1,85 @@
 import { NextResponse } from 'next/server'
 import OpenAI from 'openai'
-import fs from 'fs'
-import path from 'path'
+
+// HTML 렌더링 시스템 프롬프트를 코드에 직접 포함 (Vercel 서버리스 환경 대응)
+const HTML_RENDER_SYSTEM_PROMPT = `잘 너는 **표준 JSON(v1.1.0)** 문제 객체를 입력받아 **단일 HTML 문서**를 생성하는 렌더러다.
+
+## 주요 역할
+1. **JSON 파싱**: 표준 JSON 문제 객체를 정확히 파싱
+2. **HTML 생성**: 문제, 선택지, 정답을 포함한 완전한 HTML 문서 생성
+3. **스타일링**: 읽기 쉽고 전문적인 CSS 스타일 적용
+4. **반응형**: 다양한 화면 크기에 대응하는 반응형 디자인
+
+## 출력 형식
+반드시 완전한 HTML 문서를 생성해야 합니다:
+
+\`\`\`html
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>문제 분석 결과</title>
+    <style>
+        /* 전문적인 CSS 스타일 */
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; }
+        .container { max-width: 800px; margin: 0 auto; background: white; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); overflow: hidden; }
+        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; text-align: center; }
+        .content { padding: 30px; }
+        .problem { background: #f8f9fa; border-left: 4px solid #007bff; padding: 20px; margin: 20px 0; border-radius: 5px; }
+        .question { font-size: 18px; font-weight: 600; color: #333; margin-bottom: 15px; }
+        .choices { list-style: none; padding: 0; }
+        .choice { background: white; margin: 8px 0; padding: 12px; border-radius: 5px; border: 1px solid #e9ecef; transition: all 0.3s ease; }
+        .choice:hover { box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .choice.correct { background: #d4edda; border-color: #28a745; }
+        .choice.correct::after { content: " ✅"; color: #28a745; font-weight: bold; }
+        .answer { background: #d1ecf1; border: 1px solid #bee5eb; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        .metadata { background: #e2e3e5; padding: 15px; border-radius: 5px; margin-top: 20px; font-size: 14px; }
+        .solution { background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        .step { margin: 5px 0; padding: 5px 0; }
+        @media (max-width: 768px) { .content { padding: 20px; } .question { font-size: 16px; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📝 AI OCR 문제 분석 결과</h1>
+            <p>학습용 문제 이미지 분석 결과</p>
+        </div>
+        <div class="content">
+            <!-- 문제 내용이 여기에 렌더링됨 -->
+        </div>
+    </div>
+</body>
+</html>
+\`\`\`
+
+## 중요 규칙
+1. **완전한 HTML**: DOCTYPE, html, head, body 태그를 모두 포함
+2. **한국어 지원**: lang="ko" 속성과 UTF-8 인코딩 설정
+3. **반응형 디자인**: viewport 메타 태그와 미디어 쿼리 포함
+4. **접근성**: 시맨틱 HTML과 적절한 색상 대비
+5. **정답 표시**: 정답 선택지는 시각적으로 구분 (배경색, 체크마크)
+6. **메타데이터**: 이미지 크기, 처리 시간, 신뢰도 정보 표시
+7. **해설 포함**: solution 정보가 있다면 단계별로 표시
+
+## 처리 단계
+1. JSON 데이터에서 문제 정보 추출
+2. 문제 텍스트와 선택지를 HTML로 변환
+3. 정답 선택지에 특별한 스타일 적용
+4. 메타데이터 정보를 하단에 표시
+5. 해설 정보가 있다면 단계별로 표시
+6. 완전한 HTML 문서 생성
+
+이제 제공된 JSON 문제 객체를 전문적인 HTML 문서로 렌더링하세요.`
 
 // OpenAI 클라이언트 초기화 함수
 function getOpenAIClient() {
   const apiKey = process.env.OPENAI_API_KEY
   if (!apiKey) {
-    // 로컬 개발 환경에서만 파일에서 읽기
-    try {
-      const fileKey = fs.readFileSync(path.join(process.cwd(), 'keys/api_key.txt'), 'utf8').trim()
-      return new OpenAI({ apiKey: fileKey })
-    } catch (error) {
-      throw new Error('OpenAI API 키가 설정되지 않았습니다. 환경 변수 OPENAI_API_KEY를 설정하거나 keys/api_key.txt 파일을 생성하세요.')
-    }
+    throw new Error('OpenAI API 키가 설정되지 않았습니다. Vercel 프로젝트 설정에서 OPENAI_API_KEY 환경 변수를 설정하세요.')
   }
   return new OpenAI({ apiKey })
-}
-
-// HTML 렌더링 시스템 프롬프트 로드 함수
-function loadHtmlRenderPrompt() {
-  try {
-    return fs.readFileSync(path.join(process.cwd(), 'prompt/html_render_system_prompt.txt'), 'utf8')
-  } catch (error) {
-    console.error('HTML 렌더링 프롬프트 파일 로드 실패:', error)
-    throw new Error('HTML 렌더링 프롬프트 파일을 찾을 수 없습니다.')
-  }
 }
 
 /**
@@ -36,6 +90,8 @@ export async function GET() {
     message: 'HTML 렌더링 API가 정상적으로 작동합니다.',
     endpoint: '/api/render',
     methods: ['GET', 'POST'],
+    environment: process.env.NODE_ENV,
+    hasApiKey: !!process.env.OPENAI_API_KEY,
     timestamp: new Date().toISOString()
   })
 }
@@ -48,9 +104,8 @@ export async function POST(request) {
   try {
     console.log('HTML 렌더링 API 호출 시작...')
     
-    // OpenAI 클라이언트와 프롬프트 로드
+    // OpenAI 클라이언트 초기화
     const openai = getOpenAIClient()
-    const htmlRenderSystemPrompt = loadHtmlRenderPrompt()
     
     // 요청 데이터 파싱
     const { jsonData } = await request.json()
@@ -114,7 +169,7 @@ export async function POST(request) {
       messages: [
         {
           role: "system",
-          content: htmlRenderSystemPrompt
+          content: HTML_RENDER_SYSTEM_PROMPT
         },
         {
           role: "user",

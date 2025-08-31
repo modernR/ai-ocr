@@ -1,33 +1,100 @@
 import { NextResponse } from 'next/server'
 import OpenAI from 'openai'
-import fs from 'fs'
-import path from 'path'
+
+// 프롬프트를 코드에 직접 포함 (Vercel 서버리스 환경 대응)
+const SYSTEM_PROMPT = `당신은 학습용 문제 이미지에서 텍스트를 추출하고 구조화된 JSON 형태로 변환하는 전문 OCR 시스템입니다.
+
+## 주요 역할
+1. **이미지 분석**: 학습용 문제 이미지를 정확히 분석
+2. **텍스트 추출**: 이미지에서 모든 텍스트 요소를 추출
+3. **구조화**: 추출된 텍스트를 표준 JSON 형식으로 구조화
+4. **좌표 정보**: 각 요소의 위치 정보를 정확히 기록
+
+## 출력 형식
+반드시 다음 JSON 스키마를 따라야 합니다:
+
+\`\`\`json
+{
+  "version": "1.1.0",
+  "problems": [
+    {
+      "id": "prob_001",
+      "type": "multiple_choice",
+      "question": {
+        "text": "문제 텍스트",
+        "coordinates": { "x": 100, "y": 150, "width": 400, "height": 60 }
+      },
+      "choices": [
+        {
+          "id": "1",
+          "text": "선택지 1",
+          "coordinates": { "x": 100, "y": 250, "width": 300, "height": 30 }
+        }
+      ],
+      "answer": "정답 번호",
+      "solution": {
+        "steps": ["해결 단계 1", "해결 단계 2"],
+        "correct_answer": "정답"
+      }
+    }
+  ],
+  "metadata": {
+    "page_width_px": 800,
+    "page_height_px": 600,
+    "processing_time": "1.2s",
+    "confidence": 0.95
+  }
+}
+\`\`\`
+
+## 중요 규칙
+1. **정확성**: 모든 텍스트를 정확히 추출하고 오타 없이 기록
+2. **좌표 정보**: 각 요소의 x, y, width, height 좌표를 정확히 측정
+3. **구조화**: 문제, 선택지, 정답을 명확히 구분
+4. **JSON 형식**: 반드시 유효한 JSON 형식으로 출력
+5. **한국어**: 모든 텍스트는 한국어로 처리
+
+## 처리 단계
+1. 이미지 전체를 스캔하여 텍스트 영역 식별
+2. 문제 텍스트와 선택지를 구분
+3. 각 요소의 위치 좌표 계산
+4. 정답과 해설 정보 추출
+5. 표준 JSON 형식으로 구조화
+
+이제 제공된 이미지를 분석하여 구조화된 JSON을 생성하세요.`
+
+const USER_PROMPT_TEMPLATE = `다음 학습용 문제 이미지를 분석하여 표준 JSON 형식으로 변환해주세요.
+
+## 이미지 정보
+- 이미지 URL: {{이미지 URL 또는 "example.url"}}
+- 페이지 너비: {{정수 또는 미상}}px
+- 페이지 높이: {{정수 또는 미상}}px
+
+## 요구사항
+1. 이미지에서 모든 텍스트를 정확히 추출
+2. 문제와 선택지를 명확히 구분
+3. 각 요소의 좌표 정보를 정확히 기록
+4. 정답과 해설을 포함
+5. 표준 JSON 스키마에 따라 구조화
+
+## 출력 형식
+반드시 유효한 JSON 형식으로만 출력하세요. 설명이나 추가 텍스트는 포함하지 마세요.
+
+\`\`\`json
+{
+  "version": "1.1.0",
+  "problems": [...],
+  "metadata": {...}
+}
+\`\`\``
 
 // OpenAI 클라이언트 초기화 함수
 function getOpenAIClient() {
   const apiKey = process.env.OPENAI_API_KEY
   if (!apiKey) {
-    // 로컬 개발 환경에서만 파일에서 읽기
-    try {
-      const fileKey = fs.readFileSync(path.join(process.cwd(), 'keys/api_key.txt'), 'utf8').trim()
-      return new OpenAI({ apiKey: fileKey })
-    } catch (error) {
-      throw new Error('OpenAI API 키가 설정되지 않았습니다. 환경 변수 OPENAI_API_KEY를 설정하거나 keys/api_key.txt 파일을 생성하세요.')
-    }
+    throw new Error('OpenAI API 키가 설정되지 않았습니다. Vercel 프로젝트 설정에서 OPENAI_API_KEY 환경 변수를 설정하세요.')
   }
   return new OpenAI({ apiKey })
-}
-
-// 프롬프트 로드 함수
-function loadPrompts() {
-  try {
-    const systemPrompt = fs.readFileSync(path.join(process.cwd(), 'prompt/system_prompt.txt'), 'utf8')
-    const userPromptTemplate = fs.readFileSync(path.join(process.cwd(), 'prompt/user_prompt_template.txt'), 'utf8')
-    return { systemPrompt, userPromptTemplate }
-  } catch (error) {
-    console.error('프롬프트 파일 로드 실패:', error)
-    throw new Error('프롬프트 파일을 찾을 수 없습니다.')
-  }
 }
 
 /**
@@ -38,6 +105,8 @@ export async function GET() {
     message: 'OCR API가 정상적으로 작동합니다.',
     endpoint: '/api/ocr',
     methods: ['GET', 'POST'],
+    environment: process.env.NODE_ENV,
+    hasApiKey: !!process.env.OPENAI_API_KEY,
     timestamp: new Date().toISOString()
   })
 }
@@ -50,9 +119,8 @@ export async function POST(request) {
   try {
     console.log('OCR API 호출 시작...')
     
-    // OpenAI 클라이언트와 프롬프트 로드
+    // OpenAI 클라이언트 초기화
     const openai = getOpenAIClient()
-    const { systemPrompt, userPromptTemplate } = loadPrompts()
     
     // 요청 데이터 파싱
     const { imageData, imageMetadata } = await request.json()
@@ -115,7 +183,7 @@ export async function POST(request) {
     }
 
     // 사용자 프롬프트 생성 (템플릿에 메타데이터 삽입)
-    const userPrompt = userPromptTemplate
+    const userPrompt = USER_PROMPT_TEMPLATE
       .replace('{{이미지 URL 또는 "example.url"}}', 'example.url')
       .replace('{{정수 또는 미상}}', imageMetadata?.width || '미상')
       .replace('{{정수 또는 미상}}', imageMetadata?.height || '미상')
@@ -140,7 +208,7 @@ export async function POST(request) {
       messages: [
         {
           role: "system",
-          content: systemPrompt
+          content: SYSTEM_PROMPT
         },
         {
           role: "user",

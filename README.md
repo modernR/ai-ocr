@@ -130,13 +130,20 @@ git push origin main
    - **Build Command**: `npm run build` (기본값)
    - **Output Directory**: `.next` (기본값)
 
-### 3. 환경 변수 설정
+### 3. 환경 변수 설정 (⚠️ 중요)
 Vercel 프로젝트 설정에서 Environment Variables 추가:
 
 ```
 OPENAI_API_KEY=your_openai_api_key_here
 NODE_ENV=production
 ```
+
+**환경 변수 설정 방법:**
+1. Vercel 프로젝트 대시보드 → Settings → Environment Variables
+2. **Name**: `OPENAI_API_KEY`
+3. **Value**: `sk-proj-...` (OpenAI API 키)
+4. **Environment**: Production, Preview, Development 모두 선택
+5. **Save** 클릭
 
 ### 4. 자동 배포
 - `main` 브랜치에 푸시할 때마다 자동 배포
@@ -163,13 +170,68 @@ NODE_ENV=production
 - **GET /api/ocr**: OCR API 상태 확인
 - **GET /api/render**: 렌더링 API 상태 확인
 
+## 🚨 Vercel 배포 오류 해결
+
+### 문제: "OCR 처리 중 오류가 발생했습니다" 오류
+
+**원인:**
+1. **환경 변수 미설정**: `OPENAI_API_KEY` 환경 변수가 Vercel에 설정되지 않음
+2. **파일 시스템 접근 제한**: Vercel 서버리스 환경에서 로컬 파일 읽기 불가
+3. **API 키 인증 실패**: 잘못된 API 키 또는 만료된 키
+
+**해결 방법:**
+
+#### 1. 환경 변수 확인 및 설정
+```bash
+# Vercel CLI로 환경 변수 확인
+vercel env ls
+
+# 환경 변수 설정
+vercel env add OPENAI_API_KEY
+```
+
+#### 2. Vercel 대시보드에서 환경 변수 설정
+1. Vercel 프로젝트 → Settings → Environment Variables
+2. **Name**: `OPENAI_API_KEY`
+3. **Value**: OpenAI API 키 입력
+4. **Environment**: Production, Preview, Development 모두 선택
+5. **Save** 후 재배포
+
+#### 3. API 상태 확인
+```bash
+# OCR API 상태 확인
+curl https://your-vercel-app.vercel.app/api/ocr
+
+# 렌더링 API 상태 확인
+curl https://your-vercel-app.vercel.app/api/render
+```
+
+#### 4. 로그 확인
+Vercel 대시보드 → Functions → API 엔드포인트 → Logs에서 상세 오류 확인
+
+### 일반적인 오류 코드 및 해결책
+
+| 오류 코드 | 원인 | 해결책 |
+|-----------|------|--------|
+| 401 | API 키 인증 실패 | OpenAI API 키 재생성 및 환경 변수 업데이트 |
+| 429 | 요청 한도 초과 | OpenAI 사용량 확인 또는 요청 간격 조정 |
+| 500 | 서버 내부 오류 | 환경 변수 설정 확인 및 재배포 |
+| 413 | 요청 크기 초과 | 이미지 크기 압축 또는 Vercel Pro 플랜 사용 |
+
+### 디버깅 팁
+1. **브라우저 개발자 도구**: Network 탭에서 API 응답 확인
+2. **Vercel 로그**: Functions 로그에서 서버 오류 확인
+3. **환경 변수 테스트**: API 상태 확인 엔드포인트 활용
+4. **로컬 테스트**: `npm run dev`로 로컬에서 먼저 테스트
+
 ## 📊 프로젝트 상태
 
 - ✅ **Phase 1**: 기본 UI 구조 및 이미지 처리
 - ✅ **Phase 2**: OpenAI API 연동
 - ✅ **Phase 3**: 결과 표시 및 UI 개선
 - ✅ **Phase 4**: 성능 최적화 (부분 완료)
-- 🔄 **Phase 5**: 테스트 및 버그 수정
+- ✅ **Phase 5**: 테스트 및 버그 수정
+- 🔄 **Phase 6**: Vercel 배포 오류 해결 (진행 중)
 
 ## 📄 라이선스
 
