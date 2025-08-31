@@ -144,15 +144,4 @@ export async function POST(request) {
   }
 }
 
-/**
- * GET 요청 처리 (API 상태 확인용)
- */
-export async function GET() {
-  return NextResponse.json({
-    status: 'active',
-    endpoint: '/api/ocr',
-    description: 'OpenAI Vision API를 통한 OCR 서비스',
-    version: '1.0.0',
-    timestamp: new Date().toISOString()
-  })
-}
+
