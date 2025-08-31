@@ -97,16 +97,20 @@ export default function HtmlRenderer({ htmlContent, isLoading }) {
   // HTML 콘텐츠가 변경될 때마다 MathJax 재실행
   useEffect(() => {
     if (mathJaxLoaded && htmlContent && contentRef.current) {
-      // MathJax가 로드되었고 콘텐츠가 있으면 수식 렌더링
-      if (window.MathJax && window.MathJax.typesetPromise) {
-        window.MathJax.typesetPromise([contentRef.current])
-          .then(() => {
-            console.log('MathJax 렌더링 완료')
-          })
-          .catch((e) => {
-            console.error('MathJax 렌더링 오류:', e)
-          })
-      }
+      // 약간의 지연을 두어 DOM이 완전히 렌더링된 후 MathJax 실행
+      const timer = setTimeout(() => {
+        if (window.MathJax && window.MathJax.typesetPromise) {
+          window.MathJax.typesetPromise([contentRef.current])
+            .then(() => {
+              console.log('MathJax 렌더링 완료')
+            })
+            .catch((e) => {
+              console.error('MathJax 렌더링 오류:', e)
+            })
+        }
+      }, 100)
+      
+      return () => clearTimeout(timer)
     }
   }, [mathJaxLoaded, htmlContent])
 
@@ -134,11 +138,57 @@ export default function HtmlRenderer({ htmlContent, isLoading }) {
     }
   }
 
-  // HTML을 새 창에서 열기
+  // HTML을 새 창에서 열기 (MathJax 포함)
   const openInNewWindow = () => {
+    const htmlWithMathJax = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>HTML 렌더링 결과</title>
+  <script>
+    window.MathJax = {
+      tex: {
+        inlineMath: [['\\\\(', '\\\\)'], ['$', '$']],
+        displayMath: [['\\\\[', '\\\\]'], ['$$', '$$']],
+        processEscapes: true
+      },
+      svg: {
+        fontCache: 'global'
+      },
+      options: {
+        skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre']
+      }
+    };
+  </script>
+  <script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+  <style>
+    body { 
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+      margin: 20px; 
+      line-height: 1.6; 
+      background: #f9f9f9;
+    }
+    .container { 
+      max-width: 1200px; 
+      margin: 0 auto; 
+      background: white; 
+      padding: 20px; 
+      border-radius: 8px; 
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    ${htmlContent}
+  </div>
+</body>
+</html>`
+    
     const newWindow = window.open('', '_blank')
     if (newWindow) {
-      newWindow.document.write(htmlContent)
+      newWindow.document.write(htmlWithMathJax)
       newWindow.document.close()
     }
   }

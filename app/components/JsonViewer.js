@@ -83,16 +83,29 @@ export default function JsonViewer({ jsonData, isLoading }) {
 <!DOCTYPE html>
 <html>
 <head>
+  <meta charset="utf-8">
   <title>JSON Viewer</title>
   <style>
-    body { font-family: monospace; padding: 20px; background: #f5f5f5; }
-    .container { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+    body { 
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+      margin: 20px; 
+      line-height: 1.6; 
+      background: #f9f9f9;
+    }
+    .container { 
+      max-width: 1200px; 
+      margin: 0 auto; 
+      background: white; 
+      padding: 20px; 
+      border-radius: 8px; 
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
     .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
     .controls { display: flex; gap: 10px; }
     .button { padding: 8px 16px; border: 1px solid #ddd; background: white; cursor: pointer; border-radius: 4px; font-size: 14px; }
     .button:hover { background: #f0f0f0; }
     .button img { width: 16px; height: 16px; vertical-align: middle; }
-    .json-content { white-space: pre-wrap; font-size: 14px; line-height: 1.5; }
+    .json-content { white-space: pre-wrap; font-size: 14px; line-height: 1.5; font-family: 'Monaco', 'Menlo', 'Consolas', monospace; }
     .key { color: #d73a49; }
     .string { color: #032f62; }
     .number { color: #005cc5; }

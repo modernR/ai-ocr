@@ -14,6 +14,7 @@ export default function Home() {
   const [jsonResult, setJsonResult] = useState(null)
   const [htmlResult, setHtmlResult] = useState(null)
   const [isProcessing, setIsProcessing] = useState(false)
+  const [isRenderingHtml, setIsRenderingHtml] = useState(false)
   const [hasProcessed, setHasProcessed] = useState(false)
   const [currentStep, setCurrentStep] = useState('upload') // 'upload', 'processing', 'json', 'html'
 
@@ -24,6 +25,7 @@ export default function Home() {
     setJsonResult(null)
     setHtmlResult(null)
     setIsProcessing(false)
+    setIsRenderingHtml(false)
     setHasProcessed(false)
     setCurrentStep('upload')
   }
@@ -174,7 +176,7 @@ export default function Home() {
     
     if (!jsonResult) return
     
-    setIsProcessing(true)
+    setIsRenderingHtml(true)
     
     try {
       console.log('HTML 렌더링 시작...')
@@ -240,7 +242,7 @@ export default function Home() {
       
       alert(`HTML 렌더링 중 오류가 발생했습니다: ${errorMessage}`)
     } finally {
-      setIsProcessing(false)
+      setIsRenderingHtml(false)
     }
   }
 
@@ -307,7 +309,7 @@ export default function Home() {
               <button
                 type="button"
                 onClick={handleRenderHtml}
-                disabled={!jsonResult || isProcessing}
+                disabled={!jsonResult || isProcessing || isRenderingHtml}
                 className={styles.sendButton}
                 title="API 호출하기"
               >
@@ -323,10 +325,10 @@ export default function Home() {
                 <span className={styles.stepNumber}>3</span>
                 JSON을 HTML로 미리보기
               </h2>
-              <HtmlRenderer
-                htmlContent={htmlResult}
-                isLoading={isProcessing && currentStep === 'html'}
-              />
+                          <HtmlRenderer
+              htmlContent={htmlResult}
+              isLoading={isRenderingHtml}
+            />
             </div>
           </div>
         </div>
