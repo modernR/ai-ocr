@@ -20,6 +20,8 @@ export default function ImageUploader({
   const [isDragOver, setIsDragOver] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [loadingStep, setLoadingStep] = useState('')
+  const [showImageModal, setShowImageModal] = useState(false)
+  const [imageScale, setImageScale] = useState(1)
   const fileInputRef = useRef(null)
 
   // 이미지 파일 유효성 검사
@@ -228,6 +230,32 @@ export default function ImageUploader({
     }
   }
 
+  // 이미지 모달 열기
+  const openImageModal = () => {
+    setImageScale(1)
+    setShowImageModal(true)
+  }
+
+  // 이미지 모달 닫기
+  const closeImageModal = () => {
+    setShowImageModal(false)
+    setImageScale(1)
+  }
+
+  // 이미지 확대/축소
+  const handleZoomIn = () => {
+    setImageScale(prev => Math.min(prev * 1.2, 3))
+  }
+
+  const handleZoomOut = () => {
+    setImageScale(prev => Math.max(prev / 1.2, 0.5))
+  }
+
+  // 이미지 크기 리셋
+  const handleZoomReset = () => {
+    setImageScale(1)
+  }
+
   // 업로드 영역 클릭 핸들러
   const handleUploadAreaClick = () => {
     if (!disabled && !uploadedImage) {
@@ -282,6 +310,9 @@ export default function ImageUploader({
               src={uploadedImage.dataUrl}
               alt="업로드된 이미지"
               className={styles.previewImage}
+              onClick={openImageModal}
+              style={{ cursor: 'pointer' }}
+              title="클릭하여 원본 크기로 보기"
             />
             <button
               onClick={handleRemoveImage}
@@ -316,6 +347,43 @@ export default function ImageUploader({
                 <span className={styles.infoLabel}>형식:</span>
                 <span className={styles.infoValue}>{uploadedImage.metadata.type}</span>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 이미지 모달 */}
+      {showImageModal && uploadedImage && (
+        <div className={styles.imageModal} onClick={closeImageModal}>
+          <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.modalHeader}>
+              <h3>이미지 원본 보기</h3>
+              <div className={styles.zoomControls}>
+                <button onClick={handleZoomOut} className={styles.zoomButton} title="축소">
+                  <span>−</span>
+                </button>
+                <button onClick={handleZoomReset} className={styles.zoomButton} title="원본 크기">
+                  <span>{Math.round(imageScale * 100)}%</span>
+                </button>
+                <button onClick={handleZoomIn} className={styles.zoomButton} title="확대">
+                  <span>+</span>
+                </button>
+              </div>
+              <button onClick={closeImageModal} className={styles.closeButton} title="닫기">
+                <span>✕</span>
+              </button>
+            </div>
+            <div className={styles.modalBody}>
+              <img
+                src={uploadedImage.dataUrl}
+                alt="원본 이미지"
+                className={styles.modalImage}
+                style={{ 
+                  transform: `scale(${imageScale})`,
+                  maxWidth: 'none',
+                  maxHeight: 'none'
+                }}
+              />
             </div>
           </div>
         </div>
