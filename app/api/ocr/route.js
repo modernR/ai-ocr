@@ -169,9 +169,28 @@ export async function POST(request) {
     // JSON 파싱 시도
     let jsonResult
     try {
-      jsonResult = JSON.parse(result)
+      // Markdown 코드 블록 제거
+      let cleanedResult = result
+      
+      // ```json ... ``` 형식 처리
+      const jsonBlockMatch = result.match(/```json\s*([\s\S]*?)\s*```/)
+      if (jsonBlockMatch) {
+        cleanedResult = jsonBlockMatch[1]
+        console.log('Markdown 코드 블록에서 JSON 추출됨')
+      }
+      
+      // ``` ... ``` 형식 처리 (json 명시 없이)
+      const codeBlockMatch = result.match(/```\s*([\s\S]*?)\s*```/)
+      if (!jsonBlockMatch && codeBlockMatch) {
+        cleanedResult = codeBlockMatch[1]
+        console.log('코드 블록에서 JSON 추출됨')
+      }
+      
+      jsonResult = JSON.parse(cleanedResult)
+      console.log('JSON 파싱 성공')
     } catch (parseError) {
       console.error('JSON 파싱 오류:', parseError)
+      console.error('원본 응답:', result.substring(0, 200) + '...')
       // JSON이 아닌 경우 텍스트 그대로 반환
       jsonResult = { 
         error: 'JSON 파싱 실패',
