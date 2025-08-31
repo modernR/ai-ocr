@@ -3,14 +3,32 @@ import OpenAI from 'openai'
 import fs from 'fs'
 import path from 'path'
 
-// OpenAI 클라이언트 초기화
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY || fs.readFileSync(path.join(process.cwd(), 'keys/api_key.txt'), 'utf8').trim()
-})
+// OpenAI 클라이언트 초기화 함수
+function getOpenAIClient() {
+  const apiKey = process.env.OPENAI_API_KEY
+  if (!apiKey) {
+    // 로컬 개발 환경에서만 파일에서 읽기
+    try {
+      const fileKey = fs.readFileSync(path.join(process.cwd(), 'keys/api_key.txt'), 'utf8').trim()
+      return new OpenAI({ apiKey: fileKey })
+    } catch (error) {
+      throw new Error('OpenAI API 키가 설정되지 않았습니다. 환경 변수 OPENAI_API_KEY를 설정하거나 keys/api_key.txt 파일을 생성하세요.')
+    }
+  }
+  return new OpenAI({ apiKey })
+}
 
-// 시스템 프롬프트와 사용자 프롬프트 템플릿 로드
-const systemPrompt = fs.readFileSync(path.join(process.cwd(), 'prompt/system_prompt.txt'), 'utf8')
-const userPromptTemplate = fs.readFileSync(path.join(process.cwd(), 'prompt/user_prompt_template.txt'), 'utf8')
+// 프롬프트 로드 함수
+function loadPrompts() {
+  try {
+    const systemPrompt = fs.readFileSync(path.join(process.cwd(), 'prompt/system_prompt.txt'), 'utf8')
+    const userPromptTemplate = fs.readFileSync(path.join(process.cwd(), 'prompt/user_prompt_template.txt'), 'utf8')
+    return { systemPrompt, userPromptTemplate }
+  } catch (error) {
+    console.error('프롬프트 파일 로드 실패:', error)
+    throw new Error('프롬프트 파일을 찾을 수 없습니다.')
+  }
+}
 
 /**
  * OCR API 엔드포인트
@@ -19,6 +37,10 @@ const userPromptTemplate = fs.readFileSync(path.join(process.cwd(), 'prompt/user
 export async function POST(request) {
   try {
     console.log('OCR API 호출 시작...')
+    
+    // OpenAI 클라이언트와 프롬프트 로드
+    const openai = getOpenAIClient()
+    const { systemPrompt, userPromptTemplate } = loadPrompts()
     
     // 요청 데이터 파싱
     const { imageData, imageMetadata } = await request.json()
