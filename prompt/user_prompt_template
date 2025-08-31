@@ -1,0 +1,11 @@
+다음 이미지를 표준 JSON(v1.1.0)으로 추출해줘.
+- 한국어 유지, OCR 원문 보존.
+- 결과는 JSON만.
+
+[입력 메타]
+- page_image_url: {{이미지 URL 또는 "example.url"}}
+- page_width_px: {{정수 또는 미상}}
+- page_height_px: {{정수 또는 미상}}
+
+[이미지]
+{{이미지 첨부 또는 URL}}
