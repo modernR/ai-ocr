@@ -110,6 +110,20 @@ export default function JsonViewer({ jsonData, isLoading }) {
       box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     }
     .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
+    .title-section { display: flex; align-items: center; gap: 15px; }
+    .quo-button { 
+      padding: 6px; 
+      border: 1px solid #ddd; 
+      background: white; 
+      cursor: pointer; 
+      border-radius: 4px; 
+      display: flex; 
+      align-items: center; 
+      justify-content: center;
+      transition: all 0.2s ease;
+    }
+    .quo-button:hover { background: #f0f0f0; transform: translateY(-1px); }
+    .quo-button img { width: 20px; height: 20px; }
     .controls { display: flex; gap: 10px; }
     .button { padding: 8px 16px; border: 1px solid #ddd; background: white; cursor: pointer; border-radius: 4px; font-size: 14px; }
     .button:hover { background: #f0f0f0; }
@@ -124,12 +138,92 @@ export default function JsonViewer({ jsonData, isLoading }) {
     .toggle { color: #0969da; font-weight: bold; margin: 0 5px; }
     .collapsed { display: none; }
     .item-count { color: #999; font-size: 12px; margin-left: 5px; }
+    
+    /* 모달 스타일 */
+    .modal { 
+      display: none; 
+      position: fixed; 
+      z-index: 1000; 
+      left: 0; 
+      top: 0; 
+      width: 100%; 
+      height: 100%; 
+      background-color: rgba(0,0,0,0.5); 
+      animation: fadeIn 0.3s ease;
+    }
+    .modal-content { 
+      background-color: white; 
+      margin: 5% auto; 
+      padding: 0; 
+      border-radius: 8px; 
+      width: 90%; 
+      max-width: 800px; 
+      max-height: 80vh; 
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+      animation: slideIn 0.3s ease;
+    }
+    .modal-header { 
+      padding: 20px; 
+      border-bottom: 1px solid #eee; 
+      display: flex; 
+      justify-content: space-between; 
+      align-items: center; 
+      background: #f8f9fa;
+      border-radius: 8px 8px 0 0;
+    }
+    .modal-header h3 { margin: 0; color: #333; }
+    .close { 
+      color: #aaa; 
+      font-size: 28px; 
+      font-weight: bold; 
+      cursor: pointer; 
+      background: none; 
+      border: none;
+      padding: 0;
+      width: 30px;
+      height: 30px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .close:hover { color: #000; }
+    .modal-body { 
+      padding: 20px; 
+      max-height: 60vh; 
+      overflow-y: auto; 
+    }
+    .standard-json { 
+      background: #f8f9fa; 
+      border: 1px solid #e9ecef; 
+      border-radius: 4px; 
+      padding: 15px; 
+      font-family: 'Monaco', 'Menlo', 'Consolas', monospace; 
+      font-size: 13px; 
+      line-height: 1.5; 
+      white-space: pre-wrap;
+      color: #333;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    
+    @keyframes slideIn {
+      from { transform: translateY(-50px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
   </style>
 </head>
 <body>
   <div class="container">
     <div class="header">
-      <h2>JSON Viewer</h2>
+      <div class="title-section">
+        <h2>JSON Viewer</h2>
+        <button class="quo-button" onclick="showStandardFormat()" title="표준 포맷 보기">
+          <img src="/quo.png" alt="Standard Format">
+        </button>
+      </div>
       <div class="controls">
         <button class="button" onclick="expandAll()" title="펼쳐보기">
           <img src="/plus.png" alt="Expand"> 모두 펼치기
@@ -144,6 +238,20 @@ export default function JsonViewer({ jsonData, isLoading }) {
     </div>
     <div class="json-content" id="json-content"></div>
   </div>
+
+  <!-- 표준 포맷 모달 -->
+  <div id="standardModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>표준 JSON 포맷 (v1.1.0)</h3>
+        <button class="close" onclick="closeModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="standard-json" id="standard-format"></div>
+      </div>
+    </div>
+  </div>
+
   <script>
     const jsonData = ${JSON.stringify(jsonData, null, 2)};
     
@@ -233,6 +341,33 @@ export default function JsonViewer({ jsonData, isLoading }) {
       navigator.clipboard.writeText(JSON.stringify(jsonData, null, 2)).then(() => {
         alert('내용이 복사되었습니다!');
       });
+    }
+    
+    // 표준 포맷 모달 표시
+    async function showStandardFormat() {
+      try {
+        const response = await fetch('/std_format.json');
+        const standardFormat = await response.json();
+        
+        document.getElementById('standard-format').textContent = JSON.stringify(standardFormat, null, 2);
+        document.getElementById('standardModal').style.display = 'block';
+      } catch (error) {
+        console.error('표준 포맷 로드 오류:', error);
+        alert('표준 포맷을 불러올 수 없습니다.');
+      }
+    }
+    
+    // 모달 닫기
+    function closeModal() {
+      document.getElementById('standardModal').style.display = 'none';
+    }
+    
+    // 모달 외부 클릭 시 닫기
+    window.onclick = function(event) {
+      const modal = document.getElementById('standardModal');
+      if (event.target === modal) {
+        closeModal();
+      }
     }
     
     // 초기 렌더링
