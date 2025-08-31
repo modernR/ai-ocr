@@ -204,7 +204,7 @@ export async function POST(request) {
 
     // OpenAI Vision API 호출
     const response = await openai.chat.completions.create({
-      model: "gpt-5o",
+      model: "gpt-4o",
       messages: [
         {
           role: "system",
@@ -271,7 +271,7 @@ export async function POST(request) {
       success: true,
       data: jsonResult,
       metadata: {
-        model: "gpt-5o",
+        model: "gpt-4o",
         tokens_used: response.usage?.total_tokens || 0,
         timestamp: new Date().toISOString()
       }
