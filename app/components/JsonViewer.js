@@ -59,12 +59,21 @@ export default function JsonViewer({ jsonData, isLoading }) {
       await navigator.clipboard.writeText(JSON.stringify(jsonData, null, 2))
       setCopySuccess(true)
       
-      // 토스트 위치 설정
-      const rect = event.currentTarget.getBoundingClientRect()
-      setToastPosition({
-        x: rect.left + rect.width / 2,
-        y: rect.top - 10
-      })
+      // 토스트 위치 설정 (안전한 처리)
+      if (event && event.currentTarget) {
+        const rect = event.currentTarget.getBoundingClientRect()
+        setToastPosition({
+          x: rect.left + rect.width / 2,
+          y: rect.top - 10
+        })
+      } else {
+        // 기본 위치 설정 (화면 중앙 상단)
+        setToastPosition({
+          x: window.innerWidth / 2,
+          y: 100
+        })
+      }
+      
       setShowToast(true)
       
       setTimeout(() => {
