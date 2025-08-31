@@ -131,8 +131,12 @@ export async function POST(request) {
   try {
     console.log('HTML 렌더링 API 호출 시작...')
     
-    // OpenAI 클라이언트 초기화
+    // 호출 시마다 완전 초기화
+    console.log('=== HTML 렌더링 API 초기화 시작 ===')
+    
+    // OpenAI 클라이언트 초기화 (매 호출마다 새로 생성)
     const openai = getOpenAIClient()
+    console.log('OpenAI 클라이언트 초기화 완료')
     
     // 요청 데이터 파싱
     const { jsonData } = await request.json()
@@ -148,24 +152,29 @@ export async function POST(request) {
 
 
 
-    // JSON을 문자열로 변환하여 사용자 메시지로 전송
+    // JSON을 문자열로 변환하여 사용자 메시지로 전송 - 매 호출마다 새로 생성
     const jsonString = JSON.stringify(jsonData, null, 2)
+    console.log('JSON 문자열 변환 완료')
 
     console.log('OpenAI API 호출 중 (HTML 렌더링)...')
 
-    // OpenAI API 호출
+    // OpenAI API 호출 - 매 호출마다 새로운 메시지 배열 생성
+    const messages = [
+      {
+        role: "system",
+        content: HTML_RENDER_SYSTEM_PROMPT
+      },
+      {
+        role: "user",
+        content: `다음 표준 JSON(v1.1.0) 문제 객체를 HTML로 렌더링해줘:\n\n${jsonString}`
+      }
+    ]
+
+    console.log('메시지 배열 생성 완료 (시스템 + 사용자 메시지)')
+    
     const response = await openai.chat.completions.create({
       model: "gpt-4o",
-      messages: [
-        {
-          role: "system",
-          content: HTML_RENDER_SYSTEM_PROMPT
-        },
-        {
-          role: "user",
-          content: `다음 표준 JSON(v1.1.0) 문제 객체를 HTML로 렌더링해줘:\n\n${jsonString}`
-        }
-      ],
+      messages: messages,
       max_tokens: 4000,
       temperature: 0.1
     })

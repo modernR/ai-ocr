@@ -138,8 +138,12 @@ export async function POST(request) {
   try {
     console.log('OCR API 호출 시작...')
     
-    // OpenAI 클라이언트 초기화
+    // 호출 시마다 완전 초기화
+    console.log('=== OCR API 초기화 시작 ===')
+    
+    // OpenAI 클라이언트 초기화 (매 호출마다 새로 생성)
     const openai = getOpenAIClient()
+    console.log('OpenAI 클라이언트 초기화 완료')
     
     // 요청 데이터 파싱
     const { imageData, imageMetadata } = await request.json()
@@ -157,12 +161,13 @@ export async function POST(request) {
 
 
 
-    // 사용자 프롬프트 생성 (템플릿에 메타데이터 삽입)
+    // 사용자 프롬프트 생성 (템플릿에 메타데이터 삽입) - 매 호출마다 새로 생성
     const userPrompt = USER_PROMPT_TEMPLATE
       .replace('{{이미지 URL 또는 "example.url"}}', 'example.url')
       .replace('{{정수 또는 미상}}', imageMetadata?.width || '미상')
       .replace('{{정수 또는 미상}}', imageMetadata?.height || '미상')
 
+    console.log('사용자 프롬프트 생성 완료')
     console.log('OpenAI Vision API 호출 중...')
 
     // 이미지 데이터 형식 검증 및 수정
@@ -177,31 +182,35 @@ export async function POST(request) {
 
     console.log('처리된 이미지 데이터 시작 부분:', processedImageData.substring(0, 100))
 
-    // OpenAI Vision API 호출
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages: [
-        {
-          role: "system",
-          content: SYSTEM_PROMPT
-        },
-        {
-          role: "user",
-          content: [
-            {
-              type: "text",
-              text: userPrompt
-            },
-            {
-              type: "image_url",
-              image_url: {
-                url: processedImageData,
-                detail: "high"
-              }
+    // OpenAI Vision API 호출 - 매 호출마다 새로운 메시지 배열 생성
+    const messages = [
+      {
+        role: "system",
+        content: SYSTEM_PROMPT
+      },
+      {
+        role: "user",
+        content: [
+          {
+            type: "text",
+            text: userPrompt
+          },
+          {
+            type: "image_url",
+            image_url: {
+              url: processedImageData,
+              detail: "high"
+            }
             }
           ]
         }
-      ],
+      ]
+
+    console.log('메시지 배열 생성 완료 (시스템 + 사용자 메시지)')
+    
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o",
+      messages: messages,
       max_tokens: 4000,
       temperature: 0.1
     })
