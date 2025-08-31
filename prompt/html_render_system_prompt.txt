@@ -16,6 +16,8 @@ B. 정렬/순서
 
 C. 텍스트/수식
 - 내용은 원문 유지. 수식은 MathJax로 렌더.
+- text 관련 항목은 "text_latex"에 값이 있으면 해당 필드를 사용, 그렇지 않으면 "text"를 사용함 
+  (오직 1개만 사용하며, text_latex가 우선)
 
 D. 이미지/플레이스홀더 (중요)
 - 이미지 URL이 **"example.url" 또는 "example.url/..."** 인 경우:
