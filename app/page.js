@@ -210,7 +210,10 @@ export default function Home() {
               />
               {/* 1->2 Send 버튼 */}
               <button
-                onClick={handleProcess}
+                onClick={(e) => {
+                  e.preventDefault()
+                  handleProcess()
+                }}
                 disabled={!uploadedImage || isProcessing || hasProcessed}
                 className={styles.sendButton}
                 title={hasProcessed ? 'Demo에서는 1회만 호출됩니다' : 'OCR 분석 시작'}
@@ -233,7 +236,10 @@ export default function Home() {
               />
               {/* 2->3 Send 버튼 */}
               <button
-                onClick={handleRenderHtml}
+                onClick={(e) => {
+                  e.preventDefault()
+                  handleRenderHtml()
+                }}
                 disabled={!jsonResult || isProcessing}
                 className={styles.sendButton}
                 title="HTML 렌더링"
