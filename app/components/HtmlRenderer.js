@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import DOMPurify from 'dompurify'
 import styles from './HtmlRenderer.module.css'
 
@@ -14,6 +14,8 @@ import styles from './HtmlRenderer.module.css'
  */
 export default function HtmlRenderer({ htmlContent, isLoading }) {
   const [copySuccess, setCopySuccess] = useState(false)
+  const contentRef = useRef(null)
+  const [mathJaxLoaded, setMathJaxLoaded] = useState(false)
 
   // HTML 정화 (XSS 방지)
   const sanitizedHtml = useMemo(() => {
@@ -47,6 +49,64 @@ export default function HtmlRenderer({ htmlContent, isLoading }) {
       return htmlContent
     }
   }, [htmlContent])
+
+  // MathJax 로드 및 초기화
+  useEffect(() => {
+    // MathJax가 이미 로드되어 있는지 확인
+    if (window.MathJax) {
+      setMathJaxLoaded(true)
+      return
+    }
+
+    // MathJax 설정을 먼저 정의
+    window.MathJax = {
+      tex: {
+        inlineMath: [['\\(', '\\)'], ['$', '$']],
+        displayMath: [['\\[', '\\]'], ['$$', '$$']],
+        processEscapes: true
+      },
+      svg: {
+        fontCache: 'global'
+      },
+      options: {
+        skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre']
+      }
+    }
+
+    // MathJax 스크립트 동적 로드
+    const script = document.createElement('script')
+    script.src = 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js'
+    script.async = true
+    
+    script.onload = () => {
+      setMathJaxLoaded(true)
+    }
+
+    document.head.appendChild(script)
+
+    return () => {
+      // 컴포넌트 언마운트 시 스크립트 제거
+      if (script.parentNode) {
+        script.parentNode.removeChild(script)
+      }
+    }
+  }, [])
+
+  // HTML 콘텐츠가 변경될 때마다 MathJax 재실행
+  useEffect(() => {
+    if (mathJaxLoaded && htmlContent && contentRef.current) {
+      // MathJax가 로드되었고 콘텐츠가 있으면 수식 렌더링
+      if (window.MathJax && window.MathJax.typesetPromise) {
+        window.MathJax.typesetPromise([contentRef.current])
+          .then(() => {
+            console.log('MathJax 렌더링 완료')
+          })
+          .catch((e) => {
+            console.error('MathJax 렌더링 오류:', e)
+          })
+      }
+    }
+  }, [mathJaxLoaded, htmlContent])
 
   // HTML 복사 기능
   const copyToClipboard = async () => {
@@ -127,6 +187,7 @@ export default function HtmlRenderer({ htmlContent, isLoading }) {
       <div className={styles.htmlContent}>
         <div className={styles.renderFrame}>
           <div 
+            ref={contentRef}
             className={styles.renderedHtml}
             dangerouslySetInnerHTML={{ __html: sanitizedHtml }}
           />
