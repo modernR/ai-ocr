@@ -287,7 +287,7 @@ export async function POST(request) {
 
     // OpenAI API 호출
     const response = await openai.chat.completions.create({
-      model: "gpt-4o",
+      model: "gpt-5o",
       messages: [
         {
           role: "system",
@@ -319,7 +319,7 @@ export async function POST(request) {
       success: true,
       html: cleanHtml,
       metadata: {
-        model: "gpt-4o",
+        model: "gpt-5o",
         tokens_used: response.usage?.total_tokens || 0,
         timestamp: new Date().toISOString(),
         input_size: jsonString.length
