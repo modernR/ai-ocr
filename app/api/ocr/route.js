@@ -139,45 +139,93 @@ export async function POST(request) {
     // 테스트 모드 확인 (이미지 데이터가 "test"로 시작하는 경우만)
     if (imageData.includes('test')) {
       console.log('테스트 모드로 더미 응답 반환')
+      
+      // 수식 정규화 함수들
+      function normalizeMath(input) {
+        if (!input) return "";
+        let text = input;
+        text = text.replace(/\s+/g, " ").trim();
+        text = text.replace(/×/g, "\\cdot ");
+        text = text.replace(/÷/g, "\\div ");
+        text = text.replace(/([²³⁴-⁹])√\s*\((.*?)\)/g, (m, p1, p2) => {
+          const expMap = { "²":2, "³":3, "⁴":4, "⁵":5, "⁶":6, "⁷":7, "⁸":8, "⁹":9 };
+          return `\\sqrt[${expMap[p1]}]{${p2}}`;
+        });
+        text = text.replace(/√\s*\((.*?)\)/g, "\\sqrt{$1}");
+        text = text.replace(/√([a-zA-Z0-9]+)/g, "\\sqrt{$1}");
+        const superscripts = {
+          "⁰":"0","¹":"1","²":"2","³":"3","⁴":"4","⁵":"5",
+          "⁶":"6","⁷":"7","⁸":"8","⁹":"9"
+        };
+        text = text.replace(/([a-zA-Z0-9])([⁰¹²³⁴-⁹]+)/g, (m, base, sup) => {
+          const normal = sup.split("").map(s => superscripts[s]||"").join("");
+          return `${base}^{${normal}}`;
+        });
+        text = text.replace(/([a-zA-Z0-9\}\\]+)\/([a-zA-Z0-9\\{]+)/g, "\\frac{$1}{$2}");
+        return text;
+      }
+
+      function normalizeJson(node) {
+        if (Array.isArray(node)) {
+          node.forEach(normalizeJson);
+        } else if (typeof node === "object" && node !== null) {
+          for (const key of Object.keys(node)) {
+            if (key === "text") {
+              const raw = node[key];
+              const latex = normalizeMath(raw);
+              node["text_latex"] = latex || null;
+            } else {
+              normalizeJson(node[key]);
+            }
+          }
+        }
+      }
+
+      const testData = {
+        "version": "1.1.0",
+        "problems": [
+          {
+            "id": "prob_016",
+            "type": "multiple_choice",
+            "question": {
+              "text": "a>0일 때, ³√(√a/⁴√a) ÷ ⁴√(√a/³√a) × ⁴√(⁴√a/³√a)를 간단히 하면?",
+              "coordinates": { "x": 80, "y": 120, "width": 520, "height": 80 }
+            },
+            "choices": [
+              { "id": "1", "text": "1", "coordinates": { "x": 80, "y": 250, "width": 60, "height": 30 } },
+              { "id": "2", "text": "√a", "coordinates": { "x": 200, "y": 250, "width": 80, "height": 30 } },
+              { "id": "3", "text": "³√a", "coordinates": { "x": 320, "y": 250, "width": 80, "height": 30 } },
+              { "id": "4", "text": "⁴√a", "coordinates": { "x": 80, "y": 290, "width": 80, "height": 30 } },
+              { "id": "5", "text": "¹²√a", "coordinates": { "x": 200, "y": 290, "width": 80, "height": 30 } }
+            ],
+            "answer": "4",
+            "solution": {
+              "steps": [
+                "지수 법칙을 이용하여 근호를 지수로 표현",
+                "a^(1/2) / a^(1/4) = a^(1/2-1/4) = a^(1/4)",
+                "a^(1/2) / a^(1/3) = a^(1/2-1/3) = a^(1/6)",
+                "a^(1/4) / a^(1/3) = a^(1/4-1/3) = a^(-1/12)",
+                "최종 계산: (a^(1/4))^(1/3) ÷ (a^(1/6))^(1/4) × (a^(-1/12))^(1/4) = a^(1/4)"
+              ],
+              "correct_answer": "⁴√a"
+            }
+          }
+        ],
+        "metadata": {
+          "page_width_px": imageMetadata?.width || 800,
+          "page_height_px": imageMetadata?.height || 600,
+          "processing_time": "0.5s",
+          "confidence": 0.95
+        }
+      };
+
+      // 테스트 데이터에 수식 정규화 적용
+      normalizeJson(testData);
+      console.log('테스트 데이터 수식 정규화 완료');
+
       return NextResponse.json({
         success: true,
-        data: {
-          "version": "1.1.0",
-          "problems": [
-            {
-              "id": "prob_016",
-              "type": "multiple_choice",
-              "question": {
-                "text": "a>0일 때, ³√(√a/⁴√a) ÷ ⁴√(√a/³√a) × ⁴√(⁴√a/³√a)를 간단히 하면?",
-                "coordinates": { "x": 80, "y": 120, "width": 520, "height": 80 }
-              },
-              "choices": [
-                { "id": "1", "text": "1", "coordinates": { "x": 80, "y": 250, "width": 60, "height": 30 } },
-                { "id": "2", "text": "√a", "coordinates": { "x": 200, "y": 250, "width": 80, "height": 30 } },
-                { "id": "3", "text": "³√a", "coordinates": { "x": 320, "y": 250, "width": 80, "height": 30 } },
-                { "id": "4", "text": "⁴√a", "coordinates": { "x": 80, "y": 290, "width": 80, "height": 30 } },
-                { "id": "5", "text": "¹²√a", "coordinates": { "x": 200, "y": 290, "width": 80, "height": 30 } }
-              ],
-              "answer": "4",
-              "solution": {
-                "steps": [
-                  "지수 법칙을 이용하여 근호를 지수로 표현",
-                  "a^(1/2) / a^(1/4) = a^(1/2-1/4) = a^(1/4)",
-                  "a^(1/2) / a^(1/3) = a^(1/2-1/3) = a^(1/6)",
-                  "a^(1/4) / a^(1/3) = a^(1/4-1/3) = a^(-1/12)",
-                  "최종 계산: (a^(1/4))^(1/3) ÷ (a^(1/6))^(1/4) × (a^(-1/12))^(1/4) = a^(1/4)"
-                ],
-                "correct_answer": "⁴√a"
-              }
-            }
-          ],
-          "metadata": {
-            "page_width_px": imageMetadata?.width || 800,
-            "page_height_px": imageMetadata?.height || 600,
-            "processing_time": "0.5s",
-            "confidence": 0.95
-          }
-        },
+        data: testData,
         timestamp: new Date().toISOString()
       })
     }
@@ -256,6 +304,73 @@ export async function POST(request) {
       
       jsonResult = JSON.parse(cleanedResult)
       console.log('JSON 파싱 성공')
+      
+      // 수식 정규화 함수들
+      /**
+       * OCR 원문 수식을 LaTeX으로 정규화하는 함수
+       * @param {string} input - OCR 원문 수식 문자열
+       * @returns {string} LaTeX 변환 문자열
+       */
+      function normalizeMath(input) {
+        if (!input) return "";
+
+        let text = input;
+
+        // 1. 공백 정리
+        text = text.replace(/\s+/g, " ").trim();
+
+        // 2. 곱셈, 나눗셈 기호 정규화
+        text = text.replace(/×/g, "\\cdot ");
+        text = text.replace(/÷/g, "\\div ");
+
+        // 3. 루트 변환 (예: ³√a → \sqrt[3]{a})
+        text = text.replace(/([²³⁴-⁹])√\s*\((.*?)\)/g, (m, p1, p2) => {
+          const expMap = { "²":2, "³":3, "⁴":4, "⁵":5, "⁶":6, "⁷":7, "⁸":8, "⁹":9 };
+          return `\\sqrt[${expMap[p1]}]{${p2}}`;
+        });
+        text = text.replace(/√\s*\((.*?)\)/g, "\\sqrt{$1}");
+        text = text.replace(/√([a-zA-Z0-9]+)/g, "\\sqrt{$1}");
+
+        // 4. 유니코드 지수 → ^{n}
+        const superscripts = {
+          "⁰":"0","¹":"1","²":"2","³":"3","⁴":"4","⁵":"5",
+          "⁶":"6","⁷":"7","⁸":"8","⁹":"9"
+        };
+        text = text.replace(/([a-zA-Z0-9])([⁰¹²³⁴-⁹]+)/g, (m, base, sup) => {
+          const normal = sup.split("").map(s => superscripts[s]||"").join("");
+          return `${base}^{${normal}}`;
+        });
+
+        // 5. 분수 패턴 간단 변환 (괄호로 감싸진 경우만)
+        text = text.replace(/([a-zA-Z0-9\}\\]+)\/([a-zA-Z0-9\\{]+)/g, "\\frac{$1}{$2}");
+
+        return text;
+      }
+
+      /**
+       * JSON을 순회하면서 `text` 필드 값에만 후처리 적용
+       * @param {object} node - JSON 객체/배열
+       */
+      function normalizeJson(node) {
+        if (Array.isArray(node)) {
+          node.forEach(normalizeJson);
+        } else if (typeof node === "object" && node !== null) {
+          for (const key of Object.keys(node)) {
+            if (key === "text") {
+              const raw = node[key];
+              const latex = normalizeMath(raw);
+              node["text_latex"] = latex || null;
+            } else {
+              normalizeJson(node[key]);
+            }
+          }
+        }
+      }
+
+      // JSON 결과에 수식 정규화 적용
+      normalizeJson(jsonResult);
+      console.log('수식 정규화 완료')
+      
     } catch (parseError) {
       console.error('JSON 파싱 오류:', parseError)
       console.error('원본 응답:', result.substring(0, 200) + '...')
