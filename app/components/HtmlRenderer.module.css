@@ -24,7 +24,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1rem;
+  padding: 0.75rem 0.5rem;
   background: linear-gradient(135deg, #f0fff4 0%, #c6f6d5 100%);
   border-bottom: 1px solid #e2e8f0;
 }
@@ -149,9 +149,9 @@
 }
 
 .renderFrame {
-  padding: 1rem;
+  padding: 0.5rem;
   background: white;
-  margin: 0.75rem;
+  margin: 0.5rem;
   border-radius: 8px;
   border: 1px solid #e2e8f0;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
