@@ -64,8 +64,8 @@ export async function POST(request) {
 
     console.log('JSON 데이터 크기:', JSON.stringify(jsonData).length, '문자')
 
-    // 테스트 모드 확인 (개발 환경이거나 테스트 데이터인 경우)
-    if (process.env.NODE_ENV === 'development' || jsonData?.problems?.[0]?.id === 'prob_001') {
+    // 테스트 모드 확인 (테스트 데이터인 경우만)
+    if (jsonData?.problems?.[0]?.id === 'prob_016') {
       console.log('테스트 모드로 더미 HTML 응답 반환')
       return NextResponse.json({
         success: true,

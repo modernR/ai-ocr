@@ -66,8 +66,8 @@ export async function POST(request) {
 
     console.log('이미지 메타데이터:', imageMetadata)
 
-    // 테스트 모드 확인 (이미지 데이터가 "test"로 시작하는 경우)
-    if (imageData.includes('test') || process.env.NODE_ENV === 'development') {
+    // 테스트 모드 확인 (이미지 데이터가 "test"로 시작하는 경우만)
+    if (imageData.includes('test')) {
       console.log('테스트 모드로 더미 응답 반환')
       return NextResponse.json({
         success: true,
@@ -75,19 +75,30 @@ export async function POST(request) {
           "version": "1.1.0",
           "problems": [
             {
-              "id": "prob_001",
+              "id": "prob_016",
               "type": "multiple_choice",
               "question": {
-                "text": "다음 중 올바른 답은?",
-                "coordinates": { "x": 50, "y": 100, "width": 300, "height": 50 }
+                "text": "a>0일 때, ³√(√a/⁴√a) ÷ ⁴√(√a/³√a) × ⁴√(⁴√a/³√a)를 간단히 하면?",
+                "coordinates": { "x": 80, "y": 120, "width": 520, "height": 80 }
               },
               "choices": [
-                { "id": "A", "text": "선택지 1", "coordinates": { "x": 50, "y": 200, "width": 100, "height": 30 } },
-                { "id": "B", "text": "선택지 2", "coordinates": { "x": 50, "y": 240, "width": 100, "height": 30 } },
-                { "id": "C", "text": "선택지 3", "coordinates": { "x": 50, "y": 280, "width": 100, "height": 30 } },
-                { "id": "D", "text": "선택지 4", "coordinates": { "x": 50, "y": 320, "width": 100, "height": 30 } }
+                { "id": "1", "text": "1", "coordinates": { "x": 80, "y": 250, "width": 60, "height": 30 } },
+                { "id": "2", "text": "√a", "coordinates": { "x": 200, "y": 250, "width": 80, "height": 30 } },
+                { "id": "3", "text": "³√a", "coordinates": { "x": 320, "y": 250, "width": 80, "height": 30 } },
+                { "id": "4", "text": "⁴√a", "coordinates": { "x": 80, "y": 290, "width": 80, "height": 30 } },
+                { "id": "5", "text": "¹²√a", "coordinates": { "x": 200, "y": 290, "width": 80, "height": 30 } }
               ],
-              "answer": "B"
+              "answer": "4",
+              "solution": {
+                "steps": [
+                  "지수 법칙을 이용하여 근호를 지수로 표현",
+                  "a^(1/2) / a^(1/4) = a^(1/2-1/4) = a^(1/4)",
+                  "a^(1/2) / a^(1/3) = a^(1/2-1/3) = a^(1/6)",
+                  "a^(1/4) / a^(1/3) = a^(1/4-1/3) = a^(-1/12)",
+                  "최종 계산: (a^(1/4))^(1/3) ÷ (a^(1/6))^(1/4) × (a^(-1/12))^(1/4) = a^(1/4)"
+                ],
+                "correct_answer": "⁴√a"
+              }
             }
           ],
           "metadata": {
