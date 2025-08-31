@@ -31,6 +31,18 @@ function loadPrompts() {
 }
 
 /**
+ * OCR API 상태 확인 엔드포인트
+ */
+export async function GET() {
+  return NextResponse.json({
+    message: 'OCR API가 정상적으로 작동합니다.',
+    endpoint: '/api/ocr',
+    methods: ['GET', 'POST'],
+    timestamp: new Date().toISOString()
+  })
+}
+
+/**
  * OCR API 엔드포인트
  * 이미지를 받아서 OpenAI Vision API를 통해 JSON 결과를 반환
  */

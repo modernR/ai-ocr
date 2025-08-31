@@ -29,6 +29,18 @@ function loadHtmlRenderPrompt() {
 }
 
 /**
+ * HTML 렌더링 API 상태 확인 엔드포인트
+ */
+export async function GET() {
+  return NextResponse.json({
+    message: 'HTML 렌더링 API가 정상적으로 작동합니다.',
+    endpoint: '/api/render',
+    methods: ['GET', 'POST'],
+    timestamp: new Date().toISOString()
+  })
+}
+
+/**
  * HTML 렌더링 API 엔드포인트
  * JSON 결과를 받아서 OpenAI API를 통해 HTML로 렌더링
  */
