@@ -14,11 +14,14 @@
   "license": "ISC",
   "description": "React와 Next.js를 사용한 POC 프로젝트",
   "dependencies": {
+    "dompurify": "^3.2.6",
     "next": "^15.5.2",
+    "openai": "^5.16.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1"
   },
   "devDependencies": {
+    "@types/dompurify": "^3.0.5",
     "eslint": "^9.34.0",
     "eslint-config-next": "^15.5.2"
   }

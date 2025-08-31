@@ -1,0 +1,29 @@
+1. 프로젝트의 목적 
+- 이 프로젝트는 학습용 문제 이미지에 대해 AI기반 OCR 기능을 간단하게 테스트하는 웹 어플리케이션이다.
+- github를 통해 관리되고, vercel로 호스팅되어 서비스된다 (서비스 URL은 ./keys/vercel.txt에 있음)
+
+2. 주요 기능 
+1) 이미지 업로드 
+    * 이미지 파일을 로컬 컴퓨터에서 업로드 하거나 캡쳐한 이미지를 붙여넣기를 할 수 있다
+    * 업로드한 이미지를 취소/삭제하고 다시 업로드 또는 붙여 넣기를 할 수 있다 
+    * 한번에 하나의 이미지만 업로드 또는 붙여넣기하여 처리할 수 있다
+    * 업로드한 이미지의 가로.세로 크기는 미리 계산해 page_width_px, page_height_px에 담은 후 user_prompt_template에 사용해
+    * 이미지는 URL로 처리되지 않으므로 user_prompt_template의 page_image_url은 고정값이 'example.url'로 처리해.
+2) openai api 호출 -> JSON 결과 
+    * oepnapi api를 호출해 JSON 결과를 받아온다 
+    * oepnai api key는 ../keys/api_key.txt에 있음 
+    * 이때 사용할 system 프롬프트는 ../prompt/system_prompt.txt, user 프롬프트는 ../prompt/user_prompt_template.txt를 사용해줘
+    * 그 결과를 화면에 출력한다. 다만 출력시 http://json.parser.online.fr/ 처럼 결과를 처리한다 
+    * 예시 이미지는 ../imgs/json_parser_emxaple.png를 참고한다
+3) JSON 결과를 다시 HTML로 렌더링 
+    * JSON 결과로 oepnapi api를 다시 호출해 HTML 코드를 받아 렌더링한다.
+    * JSON보다 나은 가독성을 제공한다. 
+    * 이때 사용하는 system prompt는 ../prompt/html_render_system_prompt.txt
+
+3. UI 
+- ./UI.pdf를 참고해서 전문가처럼 만들어줘
+- 전체 초기화를 실행할 수 있는 초기화 버튼이 있으므로 놓치지 말고 처리해줘
+- 초기화되지 않은 상태에서 다시 'send'버튼을 클릭하면 'Demo에서는 1회만 호출됩니다'라는 메시지를 출력, 2회 호출되지 않도록 해줘
+
+4. 공통
+- openai api는 context window 사이즈가 커지 않도록 주의해줘 (초기화를 하면 이전 context를 종료하고 새로 시작!)

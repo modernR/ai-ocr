@@ -1,19 +1,28 @@
-# 250830 POC 프로젝트
+# AI OCR POC 프로젝트
 
-React와 Next.js를 사용한 POC(Proof of Concept) 프로젝트입니다.
+OpenAI GPT-4 Vision API를 활용한 AI 기반 OCR(Optical Character Recognition) 웹 애플리케이션입니다.
+
+## 📋 프로젝트 개요
+
+학습용 문제 이미지를 AI로 분석하여 구조화된 JSON 데이터로 변환하고, 이를 HTML로 렌더링하는 POC 애플리케이션입니다.
 
 ## 🚀 시작하기
 
 ### 필요 조건
 
-- Node.js (v16 이상)
+- Node.js (v18 이상)
 - npm 또는 yarn
+- OpenAI API 키
 
 ### 설치
 
 ```bash
 # 의존성 설치
 npm install
+
+# OpenAI API 키 설정
+# keys/api_key.txt 파일에 API 키 저장
+echo "your_openai_api_key_here" > keys/api_key.txt
 ```
 
 ### 개발 서버 실행
@@ -60,9 +69,11 @@ npm run lint
 
 ## 🛠 기술 스택
 
-- **Frontend**: React 19, Next.js 15
-- **Framework**: Next.js (App Router)
+- **Frontend**: React 19, Next.js 15 (App Router)
+- **AI/ML**: OpenAI GPT-4 Vision API
 - **Styling**: CSS Modules, Global CSS
+- **Security**: DOMPurify (XSS 방지)
+- **Performance**: 이미지 자동 압축, Canvas API
 - **Linting**: ESLint
 - **Package Manager**: npm
 
@@ -75,18 +86,63 @@ npm run lint
 
 ## 🚀 주요 기능
 
-- **App Router**: Next.js 13+ 최신 라우팅 시스템
-- **API Routes**: `/app/api` 디렉토리의 서버리스 함수
-- **CSS Modules**: 컴포넌트별 스타일 격리
-- **SEO 최적화**: 메타데이터 및 서버 사이드 렌더링
-- **Hot Reload**: 개발 중 실시간 코드 변경 반영
+### 📸 이미지 처리
+- **드래그 앤 드롭**: 이미지 파일 업로드
+- **클립보드 붙여넣기**: 스크린샷 직접 붙여넣기
+- **자동 압축**: 2MB 이상 이미지 자동 최적화
+- **메타데이터 추출**: 이미지 크기, 용량, 형식 정보
 
-## 🎯 다음 단계
+### 🤖 AI OCR 분석
+- **OpenAI GPT-4o**: 최신 Vision API 활용
+- **구조화된 추출**: JSON v1.1.0 표준 스키마
+- **다양한 문항 유형**: 4지선다, 5지선다, 단답형, 서술형 등
+- **좌표 정보**: 텍스트 및 이미지 위치 정보 포함
 
-1. 필요한 추가 라이브러리 설치
-2. 컴포넌트 개발
-3. API 연동
-4. 스타일링 개선
+### 🎨 결과 표시
+- **JSON 뷰어**: 접기/펼치기, 구문 하이라이팅, 복사 기능
+- **HTML 렌더링**: JSON을 시각적 HTML로 변환
+- **XSS 방지**: DOMPurify를 통한 안전한 렌더링
+- **반응형 디자인**: 모바일/태블릿/데스크톱 최적화
+
+### ⚡ 성능 최적화
+- **이미지 압축**: Canvas 기반 리사이징 (1920x1080, 80% 품질)
+- **단계별 로딩**: 처리 과정 실시간 표시
+- **에러 처리**: 타임아웃, 재시도, 상세 오류 메시지
+- **메모리 관리**: Object URL 자동 해제
+
+## 🌐 Vercel 배포
+
+### 환경 변수 설정
+Vercel 대시보드에서 다음 환경 변수를 설정하세요:
+
+```
+OPENAI_API_KEY=your_openai_api_key_here
+NODE_ENV=production
+```
+
+### 배포 명령어
+```bash
+# Vercel CLI 설치
+npm i -g vercel
+
+# 배포
+vercel --prod
+```
+
+## 🔧 API 엔드포인트
+
+- **POST /api/ocr**: 이미지를 JSON으로 변환
+- **POST /api/render**: JSON을 HTML로 렌더링
+- **GET /api/ocr**: OCR API 상태 확인
+- **GET /api/render**: 렌더링 API 상태 확인
+
+## 📊 프로젝트 상태
+
+- ✅ **Phase 1**: 기본 UI 구조 및 이미지 처리
+- ✅ **Phase 2**: OpenAI API 연동
+- ✅ **Phase 3**: 결과 표시 및 UI 개선
+- ✅ **Phase 4**: 성능 최적화 (부분 완료)
+- 🔄 **Phase 5**: 테스트 및 버그 수정
 
 ## 📄 라이선스
 

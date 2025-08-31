@@ -1,0 +1,507 @@
+/* 컨테이너 */
+.container {
+  width: 100%;
+  background: white;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+/* 헤더 */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  background: linear-gradient(135deg, #f0fff4 0%, #c6f6d5 100%);
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.headerLeft {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.headerLeft h3 {
+  margin: 0;
+  color: #2d3748;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.badge {
+  background: #48bb78;
+  color: white;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.headerRight {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.controlButton {
+  width: 32px;
+  height: 32px;
+  border: 1px solid #cbd5e0;
+  background: white;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+.controlButton:hover {
+  background: #f7fafc;
+  border-color: #a0aec0;
+}
+
+.copyButton.controlButton {
+  background: #48bb78;
+  color: white;
+  border-color: #48bb78;
+}
+
+.copyButton.controlButton:hover {
+  background: #38a169;
+  border-color: #38a169;
+}
+
+/* HTML 내용 */
+.htmlContent {
+  max-height: 500px;
+  overflow-y: auto;
+  background: #fafafa;
+}
+
+.renderFrame {
+  padding: 1.5rem;
+  background: white;
+  margin: 1rem;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.renderedHtml {
+  /* HTML 콘텐츠 스타일 초기화 및 격리 */
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  line-height: 1.6;
+  color: #2d3748;
+}
+
+/* 렌더링된 HTML 내부 요소 스타일 */
+.renderedHtml h1,
+.renderedHtml h2,
+.renderedHtml h3,
+.renderedHtml h4,
+.renderedHtml h5,
+.renderedHtml h6 {
+  margin: 1rem 0 0.5rem 0;
+  color: #2d3748;
+  font-weight: 600;
+}
+
+.renderedHtml h1 { font-size: 1.8rem; }
+.renderedHtml h2 { font-size: 1.5rem; }
+.renderedHtml h3 { font-size: 1.3rem; }
+.renderedHtml h4 { font-size: 1.1rem; }
+
+.renderedHtml p {
+  margin: 0.75rem 0;
+  line-height: 1.6;
+}
+
+.renderedHtml ul,
+.renderedHtml ol {
+  margin: 0.75rem 0;
+  padding-left: 1.5rem;
+}
+
+.renderedHtml li {
+  margin: 0.25rem 0;
+}
+
+.renderedHtml table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1rem 0;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.renderedHtml th,
+.renderedHtml td {
+  padding: 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.renderedHtml th {
+  background: #f7fafc;
+  font-weight: 600;
+  color: #4a5568;
+}
+
+.renderedHtml tr:last-child td {
+  border-bottom: none;
+}
+
+.renderedHtml code {
+  background: #f7fafc;
+  padding: 0.2rem 0.4rem;
+  border-radius: 4px;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 0.9em;
+  color: #e53e3e;
+}
+
+.renderedHtml pre {
+  background: #f7fafc;
+  padding: 1rem;
+  border-radius: 6px;
+  overflow-x: auto;
+  margin: 1rem 0;
+  border: 1px solid #e2e8f0;
+}
+
+.renderedHtml pre code {
+  background: none;
+  padding: 0;
+  color: #2d3748;
+}
+
+.renderedHtml blockquote {
+  border-left: 4px solid #667eea;
+  padding-left: 1rem;
+  margin: 1rem 0;
+  color: #4a5568;
+  font-style: italic;
+}
+
+.renderedHtml img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 6px;
+  margin: 0.5rem 0;
+}
+
+.renderedHtml a {
+  color: #667eea;
+  text-decoration: none;
+}
+
+.renderedHtml a:hover {
+  text-decoration: underline;
+}
+
+/* 로딩 상태 */
+.loadingState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 2rem;
+  text-align: center;
+}
+
+.loadingState p {
+  margin: 1rem 0;
+  color: #4a5568;
+  font-size: 1.1rem;
+  font-weight: 500;
+}
+
+.loadingSteps {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 1.5rem;
+}
+
+.step {
+  color: #718096;
+  font-size: 0.9rem;
+  padding: 0.5rem 1rem;
+  background: #f7fafc;
+  border-radius: 6px;
+  border-left: 3px solid #48bb78;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid #e2e8f0;
+  border-top: 3px solid #48bb78;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* 빈 상태 */
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 2rem;
+  text-align: center;
+  min-height: 400px;
+}
+
+.emptyIcon {
+  width: 80px;
+  height: 80px;
+  margin-bottom: 1rem;
+  opacity: 0.7;
+}
+
+.emptyState h3 {
+  margin: 0 0 1rem 0;
+  color: #4a5568;
+  font-size: 1.3rem;
+  font-weight: 600;
+}
+
+.emptyState p {
+  margin: 0;
+  color: #718096;
+  line-height: 1.6;
+}
+
+/* 푸터 */
+.footer {
+  padding: 1rem 1.5rem;
+  background: #f0fff4;
+  border-top: 1px solid #e2e8f0;
+}
+
+.info {
+  display: flex;
+  gap: 1.5rem;
+  font-size: 0.85rem;
+  color: #2f855a;
+  margin-bottom: 0.5rem;
+}
+
+.info span {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.warning {
+  text-align: center;
+}
+
+.warning small {
+  color: #d69e2e;
+  font-size: 0.8rem;
+}
+
+/* 반응형 디자인 */
+@media (max-width: 768px) {
+  .header {
+    padding: 0.75rem 1rem;
+    flex-direction: column;
+    gap: 1rem;
+    align-items: flex-start;
+  }
+  
+  .headerLeft {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  
+  .headerRight {
+    align-self: flex-end;
+  }
+  
+  .htmlContent {
+    max-height: 400px;
+  }
+  
+  .renderFrame {
+    margin: 0.75rem;
+    padding: 1rem;
+  }
+  
+  .info {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .loadingState,
+  .emptyState {
+    padding: 2rem 1rem;
+    min-height: 320px;
+  }
+  
+  .renderedHtml h1 { font-size: 1.5rem; }
+  .renderedHtml h2 { font-size: 1.3rem; }
+  .renderedHtml h3 { font-size: 1.1rem; }
+  .renderedHtml h4 { font-size: 1rem; }
+}
+
+@media (max-width: 480px) {
+  .htmlContent {
+    max-height: 350px;
+  }
+  
+  .renderFrame {
+    margin: 0.5rem;
+    padding: 0.75rem;
+  }
+  
+  .controlButton {
+    width: 28px;
+    height: 28px;
+    font-size: 12px;
+  }
+  
+  .renderedHtml {
+    font-size: 0.9rem;
+  }
+  
+  .loadingState,
+  .emptyState {
+    min-height: 280px;
+  }
+  
+  .renderedHtml table {
+    font-size: 0.8rem;
+  }
+  
+  .renderedHtml th,
+  .renderedHtml td {
+    padding: 0.5rem;
+  }
+}
+
+/* 다크 모드 지원 */
+@media (prefers-color-scheme: dark) {
+  .container {
+    background: rgba(45, 55, 72, 0.8);
+    border-color: #4a5568;
+  }
+  
+  .header {
+    background: linear-gradient(135deg, #2f855a 0%, #38a169 100%);
+    border-bottom-color: #4a5568;
+  }
+  
+  .headerLeft h3 {
+    color: white;
+  }
+  
+  .controlButton {
+    background: #4a5568;
+    border-color: #718096;
+    color: #e2e8f0;
+  }
+  
+  .controlButton:hover {
+    background: #718096;
+    border-color: #a0aec0;
+  }
+  
+  .htmlContent {
+    background: #2d3748;
+  }
+  
+  .renderFrame {
+    background: #4a5568;
+    border-color: #718096;
+  }
+  
+  .renderedHtml {
+    color: #e2e8f0;
+  }
+  
+  .renderedHtml h1,
+  .renderedHtml h2,
+  .renderedHtml h3,
+  .renderedHtml h4,
+  .renderedHtml h5,
+  .renderedHtml h6 {
+    color: #e2e8f0;
+  }
+  
+  .renderedHtml th {
+    background: #2d3748;
+    color: #a0aec0;
+  }
+  
+  .renderedHtml th,
+  .renderedHtml td {
+    border-bottom-color: #4a5568;
+  }
+  
+  .renderedHtml table {
+    border-color: #4a5568;
+  }
+  
+  .renderedHtml code {
+    background: #2d3748;
+    color: #fc8181;
+  }
+  
+  .renderedHtml pre {
+    background: #2d3748;
+    border-color: #4a5568;
+  }
+  
+  .renderedHtml pre code {
+    color: #e2e8f0;
+  }
+  
+  .renderedHtml blockquote {
+    color: #a0aec0;
+  }
+  
+  .renderedHtml a {
+    color: #63b3ed;
+  }
+  
+  .loadingState p,
+  .emptyState h3 {
+    color: #e2e8f0;
+  }
+  
+  .emptyState p {
+    color: #a0aec0;
+  }
+  
+  .step {
+    background: #4a5568;
+    color: #a0aec0;
+    border-left-color: #48bb78;
+  }
+  
+  .footer {
+    background: rgba(47, 133, 90, 0.2);
+    border-top-color: #4a5568;
+  }
+  
+  .info {
+    color: #68d391;
+  }
+  
+  .warning small {
+    color: #f6e05e;
+  }
+}
