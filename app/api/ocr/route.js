@@ -65,6 +65,8 @@ export async function POST(request) {
     }
 
     console.log('이미지 메타데이터:', imageMetadata)
+    console.log('이미지 데이터 길이:', imageData.length)
+    console.log('이미지 데이터 시작 부분:', imageData.substring(0, 100))
 
     // 테스트 모드 확인 (이미지 데이터가 "test"로 시작하는 경우만)
     if (imageData.includes('test')) {

@@ -114,7 +114,26 @@ export default function Home() {
       
     } catch (error) {
       console.error('OCR 처리 중 오류:', error)
-      alert(`처리 중 오류가 발생했습니다: ${error.message}`)
+      console.error('오류 타입:', typeof error)
+      console.error('오류 이름:', error?.name)
+      console.error('오류 메시지:', error?.message)
+      console.error('오류 스택:', error?.stack)
+      
+      let errorMessage = '알 수 없는 오류가 발생했습니다.'
+      
+      if (error && typeof error === 'object') {
+        if (error.message) {
+          errorMessage = error.message
+        } else if (error.toString && typeof error.toString === 'function') {
+          errorMessage = error.toString()
+        } else {
+          errorMessage = JSON.stringify(error)
+        }
+      } else if (typeof error === 'string') {
+        errorMessage = error
+      }
+      
+      alert(`처리 중 오류가 발생했습니다: ${errorMessage}`)
     } finally {
       setIsProcessing(false)
     }
