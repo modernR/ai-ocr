@@ -170,27 +170,27 @@
 .imageInfo {
   background: white;
   border-radius: 12px;
-  padding: 1.5rem;
+  padding: 1rem;
   border: 1px solid #e2e8f0;
 }
 
 .imageInfo h4 {
-  margin: 0 0 1rem 0;
+  margin: 0 0 0.5rem 0;
   color: #2d3748;
-  font-size: 1.1rem;
+  font-size: 1rem;
   font-weight: 600;
 }
 
 .infoGrid {
   display: grid;
-  gap: 0.75rem;
+  gap: 0.25rem;
 }
 
 .infoItem {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0.5rem 0;
+  padding: 0.25rem 0;
   border-bottom: 1px solid #f7fafc;
 }
 
@@ -200,13 +200,13 @@
 
 .infoLabel {
   color: #718096;
-  font-size: 0.9rem;
+  font-size: 0.8rem;
   font-weight: 500;
 }
 
 .infoValue {
   color: #2d3748;
-  font-size: 0.9rem;
+  font-size: 0.8rem;
   font-weight: 600;
   text-align: right;
   word-break: break-all;
