@@ -58,13 +58,17 @@ export default function Home() {
       const ctx = canvas.getContext('2d')
       const img = new Image()
       
+      // uploadedImage가 객체인 경우 dataUrl 추출
+      const imageUrl = uploadedImage.dataUrl || uploadedImage
+      
       await new Promise((resolve, reject) => {
         img.onload = () => resolve()
         img.onerror = (event) => {
           console.error('이미지 로딩 오류:', event)
+          console.error('이미지 URL:', imageUrl)
           reject(new Error('이미지를 로드할 수 없습니다.'))
         }
-        img.src = uploadedImage
+        img.src = imageUrl
       })
       
       canvas.width = img.width
