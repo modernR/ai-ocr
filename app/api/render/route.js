@@ -2,345 +2,101 @@ import { NextResponse } from 'next/server'
 import OpenAI from 'openai'
 
 // HTML 렌더링 시스템 프롬프트를 코드에 직접 포함 (Vercel 서버리스 환경 대응)
-const HTML_RENDER_SYSTEM_PROMPT = `잘 너는 **표준 JSON(v1.1.0)** 문제 객체를 입력받아 **단일 HTML 문서**를 생성하는 렌더러다.
+const HTML_RENDER_SYSTEM_PROMPT = `너는 **표준 JSON(v1.1.0)** 문제 객체를 입력받아 **단일 HTML 문서**를 생성하는 렌더러다.
+출력은 **설명 없이 오직 HTML**만. 외부 의존성은 MathJax CDN만 허용.
 
-## 주요 역할
-1. **JSON 파싱**: 표준 JSON 문제 객체를 정확히 파싱
-2. **HTML 생성**: 문제, 선택지, 정답을 포함한 완전한 HTML 문서 생성
-3. **수식 렌더링**: 수학 기호, 첨자, 근호를 정확히 표시
-4. **스타일링**: 읽기 쉽고 전문적인 CSS 스타일 적용
-5. **반응형**: 다양한 화면 크기에 대응하는 반응형 디자인
+[렌더링 규칙]
 
-## 수학 기호 처리 규칙 (매우 중요!)
-수학 기호와 수식을 정확히 렌더링하기 위해 다음 규칙을 반드시 따르세요:
+A. 레이아웃/스타일
+- 폭 960px 컨테이너, 모바일 100% 폭. 시스템 폰트.
+- 최상위 영역 색상: 발문 #EAF4FF, 제시문 #F1FAEE, 선택지 #FFF7E1
+- JSON의 보조정보는 HTML로 변환하지 않고 제외함
+- order가 없는 정보도 변환하지 않고 제외함
+- 각 섹션은 라운드(12px)+얇은 테두리(#e5e7eb)+섹션 제목.
+- 상단에 문항번호/문항유형/정답요구개수 배지, 원본 페이지 링크.
 
-### 1. 근호 (Root) 처리
-- ³√ → [sup]3[/sup]√ 또는 ∛
-- ⁴√ → [sup]4[/sup]√ 또는 ∜
-- √ → √ (제곱근)
+B. 정렬/순서
+- 모든 배열은 order 오름차순으로 렌더.
 
-### 2. 첨자 (Subscript/Superscript) 처리
-- ³ → [sup]3[/sup]
-- ⁴ → [sup]4[/sup]
-- ₁ → [sub]1[/sub]
-- ₂ → [sub]2[/sub]
-- ₃ → [sub]3[/sub]
-- ₄ → [sub]4[/sub]
+C. 텍스트/수식
+- 내용은 원문 유지. 수식은 MathJax로 렌더.
+- text 관련 항목은 "text_latex"에 값이 있으면 해당 필드를 사용, 그렇지 않으면 "text"를 사용함 
+  (오직 1개만 사용하며, text_latex가 우선)
 
-### 3. 분수 처리
-- a/b → [span style="display: inline-block; vertical-align: middle; text-align: center; line-height: 1.2;"][span style="border-bottom: 1px solid; padding-bottom: 2px;"]a[/span][br][span style="font-size: 0.8em;"]b[/span][/span]
+D. 이미지/플레이스홀더 (중요)
+- 이미지 URL이 **"example.url" 또는 "example.url/..."** 인 경우:
+  1) 실제 이미지를 불러오지 말고 **회색 점선 테두리 박스(.img-placeholder)**로 플레이스홀더 렌더.
+  2) 박스 중앙에 **"아직 이미지 저장 처리는 구현되지 않아 빈영역을 표시합니다"** 텍스트 출력.
+  3) 반드시 이 플레이스홀더를 **\`<figure data-ph="true" ...>\`** 안에 넣고, (선택) \`data-aspect="w/h"\`를 부여.
+- 실제 URL이면 \`<img>\`로 출력. \`inside_image_text[]\`는 이미지 위 절대배치(%)로 오버레이.
 
-### 4. 수학 연산자
-- ÷ → &divide;
-- × → &times;
-- ± → &plusmn;
-- ≠ → &ne;
-- ≤ → &le;
-- ≥ → &ge;
+E. 표
+- table.cells[].content[]를 HTML \`<table>\`로 변환. 혼합 콘텐츠 허용(텍스트/이미지/플레이스홀더).
 
-## 출력 형식
-반드시 완전한 HTML 문서를 생성해야 합니다:
+F. 보기/선택지
+- 보기 라벨(ㄱ/ㄴ/ㄷ…) 굵게. 이미지형 보기에도 동일 규칙.
+- 선택지.header[]는 선택지 카드 상단 회색 보더 박스에 표시.
+- 선택지.items[]는 카드 그리드(모바일 1열, 데스크톱 auto-fill 180px).
+- maps_to가 있으면 카드 하단 "구성: …" 표기.
 
-\`\`\`html
-<!DOCTYPE html>
-<html lang="ko">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>문제 분석 결과</title>
-    <!-- MathJax CDN 추가 -->
-    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
-    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
-    <script>
-        window.MathJax = {
-            tex: {
-                inlineMath: [['$', '$'], ['\\(', '\\)']],
-                displayMath: [['$$', '$$'], ['\\[', '\\]']]
-            },
-            svg: {
-                fontCache: 'global'
-            }
-        };
-    </script>
-    <style>
-        /* 2번 영역 확장화면 레이아웃에 맞춘 CSS 스타일 */
-        body { 
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif; 
-            margin: 0; 
-            padding: 0; 
-            background: #fafafa; 
-            line-height: 1.6;
-            color: #2d3748;
-        }
-        .container { 
-            width: 100%; 
-            background: white; 
-            border-radius: 12px; 
-            border: 1px solid #e2e8f0; 
-            overflow: hidden; 
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); 
-            position: relative; 
-        }
-        .content { 
-            padding: 0.5rem; 
-            background: #fafafa; 
-        }
-        .renderFrame { 
-            padding: 0.5rem; 
-            background: white; 
-            margin: 0.5rem; 
-            border-radius: 8px; 
-            border: 1px solid #e2e8f0; 
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); 
-        }
-        .renderedHtml { 
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif; 
-            line-height: 1.6; 
-            color: #2d3748; 
-        }
-        .problem { 
-            background: #f8f9fa; 
-            border-left: 4px solid #007bff; 
-            padding: 20px; 
-            margin: 20px 0; 
-            border-radius: 5px; 
-        }
-        .question { 
-            font-size: 18px; 
-            font-weight: 600; 
-            color: #333; 
-            margin-bottom: 15px; 
-            line-height: 1.6; 
-        }
-        .question sup, .question sub { 
-            font-size: 0.7em; 
-        }
-        .choices { 
-            list-style: none; 
-            padding: 0; 
-        }
-        .choice { 
-            background: white; 
-            margin: 8px 0; 
-            padding: 12px; 
-            border-radius: 5px; 
-            border: 1px solid #e9ecef; 
-            transition: all 0.3s ease; 
-            line-height: 1.5; 
-        }
-        .choice:hover { 
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1); 
-        }
-        .choice.correct { 
-            background: #d4edda; 
-            border-color: #28a745; 
-        }
-        .choice.correct::after { 
-            content: " ✅"; 
-            color: #28a745; 
-            font-weight: bold; 
-        }
-        .answer { 
-            background: #d1ecf1; 
-            border: 1px solid #bee5eb; 
-            padding: 15px; 
-            border-radius: 5px; 
-            margin: 20px 0; 
-        }
-        .metadata { 
-            background: #e2e3e5; 
-            padding: 15px; 
-            border-radius: 5px; 
-            margin-top: 20px; 
-            font-size: 14px; 
-        }
-        .solution { 
-            background: #fff3cd; 
-            border: 1px solid #ffeaa7; 
-            padding: 15px; 
-            border-radius: 5px; 
-            margin: 20px 0; 
-        }
-        .step { 
-            margin: 5px 0; 
-            padding: 5px 0; 
-            line-height: 1.5; 
-        }
-        /* 수학 기호 스타일 */
-        .math-symbol { 
-            font-family: 'Times New Roman', serif; 
-        }
-        .fraction { 
-            display: inline-block; 
-            vertical-align: middle; 
-            text-align: center; 
-            line-height: 1.2; 
-        }
-        .fraction-numerator { 
-            border-bottom: 1px solid; 
-            padding-bottom: 2px; 
-        }
-        .fraction-denominator { 
-            font-size: 0.8em; 
-        }
-        /* 렌더링된 HTML 내부 요소 스타일 */
-        .renderedHtml h1,
-        .renderedHtml h2,
-        .renderedHtml h3,
-        .renderedHtml h4,
-        .renderedHtml h5,
-        .renderedHtml h6 {
-            margin: 1rem 0 0.5rem 0;
-            color: #2d3748;
-            font-weight: 600;
-        }
-        .renderedHtml h1 { font-size: 1.8rem; }
-        .renderedHtml h2 { font-size: 1.5rem; }
-        .renderedHtml h3 { font-size: 1.3rem; }
-        .renderedHtml h4 { font-size: 1.1rem; }
-        .renderedHtml p {
-            margin: 0.75rem 0;
-            line-height: 1.6;
-        }
-        .renderedHtml ul,
-        .renderedHtml ol {
-            margin: 0.75rem 0;
-            padding-left: 1.5rem;
-        }
-        .renderedHtml li {
-            margin: 0.25rem 0;
-        }
-        .renderedHtml table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 1rem 0;
-            border: 1px solid #e2e8f0;
-            border-radius: 6px;
-            overflow: hidden;
-        }
-        .renderedHtml th,
-        .renderedHtml td {
-            padding: 0.75rem;
-            text-align: left;
-            border-bottom: 1px solid #e2e8f0;
-        }
-        .renderedHtml th {
-            background: #f7fafc;
-            font-weight: 600;
-            color: #4a5568;
-        }
-        .renderedHtml tr:last-child td {
-            border-bottom: none;
-        }
-        .renderedHtml code {
-            background: #f7fafc;
-            padding: 0.2rem 0.4rem;
-            border-radius: 4px;
-            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-            font-size: 0.9em;
-            color: #e53e3e;
-        }
-        .renderedHtml pre {
-            background: #f7fafc;
-            padding: 1rem;
-            border-radius: 6px;
-            overflow-x: auto;
-            margin: 1rem 0;
-            border: 1px solid #e2e8f0;
-        }
-        .renderedHtml pre code {
-            background: none;
-            padding: 0;
-            color: #2d3748;
-        }
-        .renderedHtml blockquote {
-            border-left: 4px solid #667eea;
-            padding-left: 1rem;
-            margin: 1rem 0;
-            color: #4a5568;
-            font-style: italic;
-        }
-        .renderedHtml img {
-            max-width: 100%;
-            height: auto;
-            border-radius: 6px;
-            margin: 0.5rem 0;
-        }
-        .renderedHtml a {
-            color: #667eea;
-            text-decoration: none;
-        }
-        .renderedHtml a:hover {
-            text-decoration: underline;
-        }
-        @media (max-width: 768px) { 
-            .content { padding: 0.75rem; } 
-            .question { font-size: 16px; } 
-            .renderFrame { 
-                margin: 0.75rem; 
-                padding: 1rem; 
-            }
-            .renderedHtml h1 { font-size: 1.5rem; }
-            .renderedHtml h2 { font-size: 1.3rem; }
-            .renderedHtml h3 { font-size: 1.1rem; }
-            .renderedHtml h4 { font-size: 1rem; }
-        }
-        @media (max-width: 480px) {
-            .renderFrame { 
-                margin: 0.5rem; 
-                padding: 0.75rem; 
-            }
-            .renderedHtml { 
-                font-size: 0.9rem; 
-            }
-            .renderedHtml table {
-                font-size: 0.8rem;
-            }
-            .renderedHtml th,
-            .renderedHtml td {
-                padding: 0.5rem;
-            }
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="content">
-            <div class="renderFrame">
-                <div class="renderedHtml">
-                    <!-- 문제 내용이 여기에 렌더링됨 -->
-                </div>
-            </div>
-        </div>
-    </div>
-</body>
-</html>
-\`\`\`
+G. 정답/추정정답/해설/힌트
+- 정답.choice_id가 있으면 해당 카드 초록 보더 + 배지 "정답".
+- 정답이 없고 추정_정답.choice_id가 있으면 해당 카드 점선 보더 + 배지 "추정 정답", 아래에 근거 노트.
+- 힌트[] 섹션 별도 렌더(텍스트/이미지/플레이스홀더 지원).
+- 해설: 요약, 단계풀이(번호 목록), 정답근거, 오답피드백(선택지별), 관련개념 배지.
 
-## 중요 규칙
-1. **완전한 HTML**: DOCTYPE, html, head, body 태그를 모두 포함
-2. **한국어 지원**: lang="ko" 속성과 UTF-8 인코딩 설정
-3. **수식 처리**: 수학 기호와 첨자를 HTML 엔티티나 적절한 태그로 변환
-4. **반응형 디자인**: viewport 메타 태그와 미디어 쿼리 포함
-5. **접근성**: 시맨틱 HTML과 적절한 색상 대비
-6. **정답 표시**: 정답 선택지는 시각적으로 구분 (배경색, 체크마크)
-7. **메타데이터**: 이미지 크기, 처리 시간, 신뢰도 정보 표시
-8. **해설 포함**: solution 정보가 있다면 단계별로 표시
+H. 비정규_추출
+- 존재=true면 "비정규 추출" 섹션을 접기/펼치기(details)로 제공. 각 항목에 종류/텍스트/좌표/신뢰도/비고.
 
-## 수식 변환 예시
-입력: "a>0일 때, ³√(√a/⁴√a) ÷ ⁴√(√a/³√a) × ⁴√(⁴√a/³√a)를 간단히 하면?"
-출력: "a>0일 때, [sup]3[/sup]√(√a/[sup]4[/sup]√a) ÷ [sup]4[/sup]√(√a/[sup]3[/sup]√a) × [sup]4[/sup]√([sup]4[/sup]√a/[sup]3[/sup]√a)를 간단히 하면?"
+I. 플레이스홀더 세로 자동 축소(공백 제거) — **공통 스크립트/스타일을 HTML에 반드시 포함**
+- CSS (기본 폭 유지, 세로는 JS가 계산):
+  <style>
+    .img-placeholder{
+      display:flex;align-items:center;justify-content:center;
+      width:100%;min-height:80px;
+      border:2px dashed #9ca3af;border-radius:8px;color:#6b7280;
+      background:#fafafa;padding:12px;text-align:center;font-size:12px
+    }
+  </style>
+- JS (문서 하단에 포함):
+  <script>
+  (function(){
+    function pct(v){return Math.max(0,Math.min(100,parseFloat(String(v).replace('%',''))||0));}
+    function fitPH(){
+      document.querySelectorAll('figure[data-ph="true"]').forEach(fig=>{
+        const ph=fig.querySelector('.img-placeholder'); if(!ph) return;
+        const overlays=fig.querySelectorAll('.overlay-text');
+        const w=fig.clientWidth||ph.clientWidth||0;
+        let maxBottom=0;
+        overlays.forEach(el=>{
+          const top=pct(el.style.top), h=pct(el.style.height);
+          maxBottom=Math.max(maxBottom, top+h);
+        });
+        let hpx;
+        if(maxBottom>0){
+          // 오버레이 하단까지만 + 여백 16px, 과도한 높이 방지
+          hpx=Math.max(60, Math.min(w*(maxBottom/100), w*0.95))+16;
+        }else{
+          // 오버레이 없으면 data-aspect="w/h" 또는 기본 3:2
+          const asp=fig.dataset.aspect||'3/2';
+          const [aw,ah]=asp.split('/').map(Number);
+          const ratio=(aw>0&&ah>0)?(ah/aw):(2/3);
+          hpx=w*ratio;
+        }
+        ph.style.height=\`\${Math.round(hpx)}px\`;
+        fig.style.height='auto';
+      });
+    }
+    window.addEventListener('load',fitPH);
+    window.addEventListener('resize',()=>{clearTimeout(window.__phT);window.__phT=setTimeout(fitPH,80);});
+  })();
+  </script>
 
-## 처리 단계
-1. JSON 데이터에서 문제 정보 추출
-2. 수학 기호와 첨자를 적절한 HTML 태그로 변환
-3. 문제 텍스트와 선택지를 HTML로 변환
-4. 정답 선택지에 특별한 스타일 적용
-5. 메타데이터 정보를 하단에 표시
-6. 해설 정보가 있다면 단계별로 표시
-7. 완전한 HTML 문서 생성
+J. 코드 품질
+- HTML5 한 파일 완결(<style>, <script> 내장). 주석 최소화, 불필요한 인라인 스타일 금지.
+- 클래스 예시: .section--stem, .section--material, .section--choices, .img-placeholder, .choice-card, .overlay-text, .note 등.
 
-이제 제공된 JSON 문제 객체를 전문적인 HTML 문서로 렌더링하세요. 수학 기호가 포함된 경우 반드시 위의 변환 규칙을 적용하세요.`
+**출력은 HTML 문자열만 포함한다.**`
 
 // OpenAI 클라이언트 초기화 함수
 function getOpenAIClient() {
