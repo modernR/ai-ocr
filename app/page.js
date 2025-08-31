@@ -59,8 +59,11 @@ export default function Home() {
       const img = new Image()
       
       await new Promise((resolve, reject) => {
-        img.onload = resolve
-        img.onerror = reject
+        img.onload = () => resolve()
+        img.onerror = (event) => {
+          console.error('이미지 로딩 오류:', event)
+          reject(new Error('이미지를 로드할 수 없습니다.'))
+        }
         img.src = uploadedImage
       })
       
@@ -128,13 +131,23 @@ export default function Home() {
       
       let errorMessage = '알 수 없는 오류가 발생했습니다.'
       
-      if (error && typeof error === 'object') {
+      // Event 객체인 경우 처리
+      if (error instanceof Event) {
+        console.error('Error is an Event object:', error)
+        errorMessage = '이미지 처리 중 오류가 발생했습니다.'
+      } else if (error instanceof Error) {
+        errorMessage = error.message
+      } else if (error && typeof error === 'object') {
         if (error.message) {
           errorMessage = error.message
-        } else if (error.toString && typeof error.toString === 'function') {
+        } else if (error.toString && typeof error.toString === 'function' && !error.toString().includes('[object')) {
           errorMessage = error.toString()
         } else {
-          errorMessage = JSON.stringify(error)
+          try {
+            errorMessage = JSON.stringify(error)
+          } catch (e) {
+            errorMessage = '오류 정보를 표시할 수 없습니다.'
+          }
         }
       } else if (typeof error === 'string') {
         errorMessage = error
@@ -206,7 +219,22 @@ export default function Home() {
       
     } catch (error) {
       console.error('HTML 렌더링 중 오류:', error)
-      alert(`HTML 렌더링 중 오류가 발생했습니다: ${error.message}`)
+      
+      let errorMessage = '알 수 없는 오류가 발생했습니다.'
+      
+      // Event 객체인 경우 처리
+      if (error instanceof Event) {
+        console.error('Error is an Event object:', error)
+        errorMessage = 'HTML 처리 중 오류가 발생했습니다.'
+      } else if (error instanceof Error) {
+        errorMessage = error.message
+      } else if (error && typeof error === 'object' && error.message) {
+        errorMessage = error.message
+      } else if (typeof error === 'string') {
+        errorMessage = error
+      }
+      
+      alert(`HTML 렌더링 중 오류가 발생했습니다: ${errorMessage}`)
     } finally {
       setIsProcessing(false)
     }
