@@ -104,96 +104,67 @@ export default function HtmlRenderer({ htmlContent, isLoading }) {
   // HTML 콘텐츠가 변경될 때마다 MathJax 재실행 (개선된 재시도 로직)
   useEffect(() => {
     if (mathJaxLoaded && htmlContent && contentRef.current) {
-      console.log('MathJax 렌더링 시작...')
-      
-      // DOM이 완전히 렌더링된 후 MathJax 실행 (수식 전처리 포함)
+      console.log('MathJax 렌더링 시작...');
       const renderMath = (retryCount = 0) => {
-        // 1단계: HTML에서 잘못된 수식 태그들을 LaTeX로 복원
-        preprocessMathElements(contentRef.current)
-        
         if (window.MathJax && window.MathJax.typesetPromise) {
-          console.log(`MathJax 렌더링 시도 ${retryCount + 1}`)
-          
+          console.log(`MathJax 렌더링 시도 ${retryCount + 1}`);
           window.MathJax.typesetPromise([contentRef.current])
             .then(() => {
-              console.log('✅ MathJax 렌더링 완료')
-              // MathJax 렌더링 완료 후 CSS 스타일 적용
-              applyMathJaxStyles()
+              console.log('✅ MathJax 렌더링 완료');
+              applyMathJaxStyles();
             })
             .catch((error) => {
-              console.error(`❌ MathJax 렌더링 오류 (시도 ${retryCount + 1}):`, error)
-              
-              // 3회까지 재시도
-              if (retryCount < 2) {
-                setTimeout(() => renderMath(retryCount + 1), 500)
-              } else {
-                console.error('MathJax 렌더링이 3회 실패했습니다.')
-              }
-            })
+              console.error(`❌ MathJax 렌더링 오류 (시도 ${retryCount + 1}):`, error);
+              if (retryCount < 2) { setTimeout(() => renderMath(retryCount + 1), 500); }
+              else { console.error('MathJax 렌더링이 3회 실패했습니다.'); }
+            });
         } else {
-          console.warn('MathJax가 아직 로드되지 않았습니다.')
-          
-          // MathJax가 아직 로드되지 않은 경우 재시도
-          if (retryCount < 5) {
-            setTimeout(() => renderMath(retryCount + 1), 200)
-          }
+          console.warn('MathJax가 아직 로드되지 않았습니다.');
+          if (retryCount < 5) { setTimeout(() => renderMath(retryCount + 1), 200); }
         }
-      }
-      
-      // 약간의 지연 후 렌더링 시작
-      const timer = setTimeout(() => renderMath(), 200)
-      
-      return () => clearTimeout(timer)
+      };
+      renderMath();
     }
-  }, [mathJaxLoaded, htmlContent])
+  }, [mathJaxLoaded, htmlContent]);
 
   // HTML에서 수식 태그를 LaTeX로 전처리하는 함수
   const preprocessMathElements = (container) => {
-    if (!container) return
-    
-    // 1. 기존 <math> 태그들을 LaTeX로 변환
-    const mathElements = container.querySelectorAll('math')
+    if (!container) return;
+    const mathElements = container.querySelectorAll('math');
     mathElements.forEach(mathEl => {
-      const textContent = mathEl.textContent || mathEl.innerText
+      const textContent = mathEl.textContent || mathEl.innerText;
       if (textContent) {
-        // 수식 내용을 추출하여 LaTeX 구분자로 감싸기
-        let latexContent = textContent.trim()
-        
-        // 이미 $ 구분자가 있는지 확인
+        let latexContent = textContent.trim();
+        // 백슬래시 복원
+        latexContent = latexContent.replace(/\\/g, '\\');
+        // 수식 구분은 한 번만
         if (!latexContent.startsWith('$') && !latexContent.endsWith('$')) {
-          latexContent = `$${latexContent}$`
+          latexContent = `$${latexContent}$`;
         }
-        
-        // 새로운 span 요소로 교체
-        const span = document.createElement('span')
-        span.textContent = latexContent
-        mathEl.parentNode.replaceChild(span, mathEl)
+        // LaTeX 명령 보정
+        latexContent = latexContent.replace(/\bsin\b/g, '\\sin')
+                                   .replace(/\balpha\b/g, '\\alpha');
+        const span = document.createElement('span');
+        span.textContent = latexContent;
+        mathEl.parentNode.replaceChild(span, mathEl);
       }
-    })
-    
-    // 2. 텍스트 노드에서 LaTeX 패턴 정리
-    const textNodes = getTextNodes(container)
+    });
+    const textNodes = getTextNodes(container);
     textNodes.forEach(node => {
-      let text = node.textContent
-      if (!text || !text.trim()) return
-      
-      // 이중 백슬래시를 단일 백슬래시로 변환 (LaTeX 명령어)
-      text = text.replace(/\\\\(frac|sqrt|angle|alpha|beta|theta|gamma|cos|sin|tan|cdot|lt|gt)/g, '\\$1')
-      
-      // LaTeX 명령어가 포함되어 있으나 $ 구분자가 없는 경우 추가
-      if ((text.includes('\\frac') || text.includes('\\sqrt') || text.includes('\\angle') || 
-           text.includes('\\alpha') || text.includes('\\beta') || text.includes('\\theta') ||
-           text.includes('\\cos') || text.includes('\\sin') || text.includes('\\tan')) &&
-          !text.includes('$')) {
-        text = `$${text}$`
-      }
-      
-      // 텍스트가 변경되었으면 업데이트
+      let text = node.textContent;
+      if (!text || !text.trim()) return;
+      // 백슬래시 복원
+      text = text.replace(/\\/g, '\\');
+      // 수식 구분은 한 번만
+      text = text.replace(/\$([^$]+)\$/g, '\\($1\\)');
+      // LaTeX 명령 보정
+      text = text.replace(/\bsin\b/g, '\\sin')
+                 .replace(/\balpha\b/g, '\\alpha');
       if (text !== node.textContent) {
-        node.textContent = text
+        node.textContent = text;
       }
-    })
-  }
+    });
+  };
   
   // DOM의 모든 텍스트 노드를 찾는 헬퍼 함수
   const getTextNodes = (element) => {
