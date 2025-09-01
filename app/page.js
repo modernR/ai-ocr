@@ -319,8 +319,8 @@ export default function Home() {
             </div>
           </div>
 
-          {/* 우측: HTML 렌더링 결과 영역 - 숨김 처리 */}
-          {/* <div className={styles.rightColumn}>
+          {/* 우측: HTML 렌더링 결과 영역 */}
+          <div className={styles.rightColumn}>
             <div className={styles.section}>
               <h2 className={styles.sectionTitle}>
                 <span className={styles.stepNumber}>3</span>
@@ -331,7 +331,7 @@ export default function Home() {
                 isLoading={isRenderingHtml}
               />
             </div>
-          </div> */}
+          </div>
         </div>
       </main>
 
