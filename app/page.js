@@ -279,6 +279,7 @@ export default function Home() {
                 uploadedImage={uploadedImage}
                 onImageUpload={setUploadedImage}
                 onMetadataChange={setImageMetadata}
+                onReset={handleReset}
                 disabled={isProcessing}
               />
               {/* 1->2 Send 버튼 */}

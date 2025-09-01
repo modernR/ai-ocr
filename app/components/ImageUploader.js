@@ -11,11 +11,13 @@ import styles from './ImageUploader.module.css'
  * - 이미지 미리보기 및 삭제 기능
  * - 이미지 크기 계산 (page_width_px, page_height_px)
  * - 한 번에 하나의 이미지만 처리
+ * - 닫기(X) 버튼을 통한 전체 초기화 기능
  */
 export default function ImageUploader({ 
   uploadedImage, 
   onImageUpload, 
   onMetadataChange, 
+  onReset,
   disabled = false 
 }) {
   const [isDragOver, setIsDragOver] = useState(false)
@@ -222,10 +224,17 @@ export default function ImageUploader({
     }
   }, [disabled, processImage])
 
-  // 이미지 삭제 핸들러
+  // 이미지 삭제 및 전체 초기화 핸들러
   const handleRemoveImage = () => {
-    onImageUpload(null)
-    onMetadataChange({ width: 0, height: 0 })
+    // 전체 초기화 함수가 제공된 경우 사용, 그렇지 않으면 기본 이미지 삭제만 수행
+    if (onReset) {
+      onReset()
+    } else {
+      onImageUpload(null)
+      onMetadataChange({ width: 0, height: 0 })
+    }
+    
+    // 파일 input 초기화
     if (fileInputRef.current) {
       fileInputRef.current.value = ''
     }
