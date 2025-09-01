@@ -328,7 +328,7 @@ export default function JsonViewer({ jsonData, isLoading, uploadedImage }) {
         <div class="mode-buttons">
           <button class="mode-button active" onclick="switchMode('format')">Format</button>
           <button class="mode-button" onclick="switchMode('json')">JSON</button>
-          <button class="mode-button" onclick="switchMode('overlay')">Overlay</button>
+          <!-- <button class="mode-button" onclick="switchMode('overlay')">Overlay</button> -->
         </div>
         <button class="quo-button" onclick="showStandardFormat()" title="표준 포맷 보기">
           <img src="/quo.png" alt="Standard Format">
