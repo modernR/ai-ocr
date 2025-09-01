@@ -1,6 +1,101 @@
 import { NextResponse } from 'next/server'
 import OpenAI from 'openai'
 
+/**
+ * MathJax 렌더링을 위한 문자열 정규화:
+ * 1) JSON 저장/전송 과정에서 생긴 이스케이프 백슬래시(\\) → 단일 백슬래시(\)로 복원
+ * 2) (옵션) $$...$$ → \[...\],  $...$ → \(...\) 로 변환
+ */
+function normalizeMathForMathJax(str, opts = {}) {
+  const {
+    convertDollarToParen = false, // true면 $..$ / $$..$$ 를 \(..\) / \[..\] 로 변환
+    trim = true,                  // 앞뒤 공백 정리
+  } = opts
+
+  if (typeof str !== 'string') return str
+
+  let out = str
+
+  // 1) 백슬래시 복원: \\ → \
+  //   JSON/문자열 저장 과정에서 이스케이프된 라텍스 명령(\\alpha 등)을 \alpha 로 복원
+  out = out.replace(/\\\\/g, '\\')
+
+  if (convertDollarToParen) {
+    // 2-a) 블록 수식: $$...$$ → \[...\]
+    //   먼저 $$..$$를 처리해야 $..$와 겹치지 않습니다.
+    out = out.replace(/\$\$([\s\S]*?)\$\$/g, '\\[$1\\]')
+
+    // 2-b) 인라인 수식: $...$ → \(...\)
+    //   위에서 $$..$$는 이미 \[..\]로 치환되었으므로 남은 $..$는 인라인으로 간주
+    //   여러 개의 인라인 수식도 순차 변환됩니다.
+    out = out.replace(/\$([^$]+)\$/g, '\\($1\\)')
+  }
+
+  return trim ? out.trim() : out
+}
+
+/**
+ * 주어진 객체(JSON)에서 "텍스트 필드만" 골라 normalizeMathForMathJax를 적용.
+ * - includeKeys: 키 이름(정규식) 화이트리스트. 여기에 매칭되는 키만 변환.
+ * - deep: true면 중첩 객체/배열을 모두 순회.
+ * - stringGuard: 문자열이지만 변환하면 안 되는 값(예: URL)을 필터링하고 싶을 때 사용.
+ */
+function postprocessTextFields(obj, options = {}) {
+  const {
+    includeKeys = [
+      /^text$/i,
+      /^latex$/i,
+      /^text_latex$/i,
+      /^질의문$/,
+      /^제시문$/,
+      /^지문$/,
+      /^설명$/,
+      /^해설$/,
+      /^힌트$/,
+      /^선택지(\d+)?$/,
+      /^보기(\d+)?$/,
+      /^문항텍스트$/,
+      /^본문$/,
+    ],
+    convertDollarToParen = false,
+    deep = true,
+    stringGuard = (key, value) => {
+      // URL, 파일경로, 코드스니펫 등은 제외하고 싶다면 조건 추가
+      // 예: http/https로 시작하면 제외
+      if (typeof value !== 'string') return false
+      if (/^https?:\/\//i.test(value)) return false
+      if (/^example\.url/i.test(value)) return false // example.url도 제외
+      return true
+    },
+  } = options
+
+  function shouldProcessKey(key) {
+    return includeKeys.some((re) => re.test(key))
+  }
+
+  function walk(node) {
+    if (Array.isArray(node)) {
+      return node.map((v) => (deep ? walk(v) : v))
+    }
+    if (node && typeof node === 'object') {
+      const out = {}
+      for (const [k, v] of Object.entries(node)) {
+        if (typeof v === 'string' && shouldProcessKey(k) && stringGuard(k, v)) {
+          out[k] = normalizeMathForMathJax(v, { convertDollarToParen })
+        } else if (deep && (typeof v === 'object' || Array.isArray(v))) {
+          out[k] = walk(v)
+        } else {
+          out[k] = v
+        }
+      }
+      return out
+    }
+    return node
+  }
+
+  return walk(obj)
+}
+
 // HTML 렌더링 시스템 프롬프트를 코드에 직접 포함 (Vercel 서버리스 환경 대응)
 const HTML_RENDER_SYSTEM_PROMPT = `중요한 문제이니 주의깊게 살펴보고 처리해줘
 
@@ -20,20 +115,22 @@ A. 레이아웃/스타일
 B. 정렬/순서
 - 모든 배열은 order 오름차순으로 렌더.
 
-C. 텍스트/수식
-- 내용은 원문 유지. 수식은 MathJax로 렌더.
+C. 텍스트/수식 (중요: LaTeX 구분자 유지)
+- 내용은 원문 유지. 수식은 반드시 **LaTeX 구분자($, $$)를 그대로 유지**하여 MathJax가 렌더링하도록 함.
+- **절대 math 태그로 변환하지 말고** LaTeX 수식을 달러 기호 구분자 형태로 그대로 출력
 - text 관련 항목은 "text_latex"에 값이 있으면 해당 필드를 사용, 그렇지 않으면 "text"를 사용함 
   (오직 1개만 사용하며, text_latex가 우선)
+- 예시: LaTeX 수식은 원본 그대로 출력 (HTML math 태그로 변환 금지)
 
 D. 이미지/플레이스홀더 (중요)
 - 이미지 URL이 **"example.url" 또는 "example.url/..."** 인 경우:
   1) 실제 이미지를 불러오지 말고 **회색 점선 테두리 박스(.img-placeholder)**로 플레이스홀더 렌더.
   2) 박스 중앙에 **"아직 이미지 저장 처리는 구현되지 않아 빈영역을 표시합니다"** 텍스트 출력.
-  3) 반드시 이 플레이스홀더를 **\`<figure data-ph="true" ...>\`** 안에 넣고, (선택) \`data-aspect="w/h"\`를 부여.
-- 실제 URL이면 \`<img>\`로 출력. \`inside_image_text[]\`는 이미지 위 절대배치(%)로 오버레이.
+  3) 반드시 이 플레이스홀더를 **figure 태그** 안에 넣고, data-ph와 data-aspect 속성을 부여.
+- 실제 URL이면 img 태그로 출력. inside_image_text는 이미지 위 절대배치로 오버레이.
 
 E. 표
-- table.cells[].content[]를 HTML \`<table>\`로 변환. 혼합 콘텐츠 허용(텍스트/이미지/플레이스홀더).
+- table.cells[].content[]를 HTML table로 변환. 혼합 콘텐츠 허용(텍스트/이미지/플레이스홀더).
 
 F. 보기/선택지
 - 보기 라벨(ㄱ/ㄴ/ㄷ…) 굵게. 이미지형 보기에도 동일 규칙.
@@ -85,7 +182,7 @@ I. 플레이스홀더 세로 자동 축소(공백 제거) — **공통 스크립
           const ratio=(aw>0&&ah>0)?(ah/aw):(2/3);
           hpx=w*ratio;
         }
-        ph.style.height=\`\${Math.round(hpx)}px\`;
+        ph.style.height=Math.round(hpx)+'px';
         fig.style.height='auto';
       });
     }
@@ -150,10 +247,31 @@ export async function POST(request) {
 
     console.log('JSON 데이터 크기:', JSON.stringify(jsonData).length, '문자')
 
+    // LaTeX 수식 전처리: 이중 백슬래시를 단일 백슬래시로 변환
+    console.log('LaTeX 수식 전처리 시작...')
+    const processedJsonData = postprocessTextFields(jsonData, {
+      convertDollarToParen: false, // $...$ 구분자를 그대로 유지
+      deep: true,
+      includeKeys: [
+        /^text$/i,
+        /^text_latex$/i,
+        /^질의문$/,
+        /^제시문$/,
+        /^설명$/,
+        /^해설$/,
+        /^힌트$/,
+        /^본문$/,
+        /^내용$/,
+        /^문제$/,
+        /^답$/,
+        /^선택지$/,
+        /^보기$/,
+      ]
+    })
+    console.log('LaTeX 수식 전처리 완료')
 
-
-    // JSON을 문자열로 변환하여 사용자 메시지로 전송 - 매 호출마다 새로 생성
-    const jsonString = JSON.stringify(jsonData, null, 2)
+    // 전처리된 JSON을 문자열로 변환하여 사용자 메시지로 전송 - 매 호출마다 새로 생성
+    const jsonString = JSON.stringify(processedJsonData, null, 2)
     console.log('JSON 문자열 변환 완료')
 
     console.log('OpenAI API 호출 중 (HTML 렌더링)...')

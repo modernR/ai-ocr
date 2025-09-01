@@ -27,17 +27,21 @@ export default function HtmlRenderer({ htmlContent, isLoading }) {
     if (typeof window === 'undefined') return htmlContent
     
     try {
-      // DOMPurify 설정 - 안전한 태그와 속성만 허용
+      // DOMPurify 설정 - 안전한 태그와 속성만 허용 (MathJax 태그 포함)
       const config = {
         ALLOWED_TAGS: [
           'div', 'span', 'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
           'ul', 'ol', 'li', 'table', 'thead', 'tbody', 'tr', 'td', 'th',
           'strong', 'em', 'b', 'i', 'u', 'br', 'hr', 'img', 'a',
-          'figure', 'figcaption', 'details', 'summary', 'style', 'script'
+          'figure', 'figcaption', 'details', 'summary', 'style', 'script',
+          // MathJax 관련 태그들 추가
+          'math', 'mtext', 'mrow', 'mi', 'mo', 'mn', 'mfrac', 'msqrt', 'msup', 'msub'
         ],
         ALLOWED_ATTR: [
           'class', 'id', 'style', 'src', 'alt', 'href', 'target',
-          'data-ph', 'data-aspect', 'title', 'role', 'aria-label'
+          'data-ph', 'data-aspect', 'title', 'role', 'aria-label',
+          // MathJax 관련 속성들 추가
+          'xmlns', 'display', 'mathvariant', 'mathsize', 'mathcolor'
         ],
         ALLOW_DATA_ATTR: true,
         ADD_TAGS: ['style', 'script'], // MathJax와 플레이스홀더 스크립트 허용
@@ -60,49 +64,21 @@ export default function HtmlRenderer({ htmlContent, isLoading }) {
       return
     }
 
-    // MathJax 설정을 먼저 정의 - 수식을 일반 텍스트처럼 정렬하고 배치 허용
+    // MathJax 기본 설정 - 안정적인 수식 렌더링을 위한 단순화된 설정
     window.MathJax = {
       tex: {
         inlineMath: [['\\(', '\\)'], ['$', '$']],
         displayMath: [['\\[', '\\]'], ['$$', '$$']],
         processEscapes: true
       },
-      svg: {
-        fontCache: 'global'
-      },
       options: {
-        skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre'],
-        // 수식을 일반 텍스트처럼 처리하도록 설정
-        enableMenu: false,
-        menuSettings: {
-          texHints: false,
-          semantics: false,
-          zoom: false
+        skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre']
+      },
+      startup: {
+        ready: () => {
+          console.log('MathJax가 초기화되었습니다.')
+          MathJax.startup.defaultReady()
         }
-      },
-      // 수식 렌더링 설정 개선
-      chtml: {
-        // 수식을 일반 텍스트처럼 정렬
-        displayAlign: 'left',
-        displayIndent: '0',
-        // 수식 전후 텍스트 배치 허용
-        scale: 1,
-        minScale: 0.5,
-        maxScale: 2,
-        // 수식과 텍스트 간격 조정
-        mtextInheritFont: true,
-        mtextDir: 'ltr'
-      },
-      // SVG 렌더링 설정도 동일하게 적용
-      svg: {
-        fontCache: 'global',
-        displayAlign: 'left',
-        displayIndent: '0',
-        scale: 1,
-        minScale: 0.5,
-        maxScale: 2,
-        mtextInheritFont: true,
-        mtextDir: 'ltr'
       }
     }
 
@@ -125,27 +101,126 @@ export default function HtmlRenderer({ htmlContent, isLoading }) {
     }
   }, [])
 
-  // HTML 콘텐츠가 변경될 때마다 MathJax 재실행
+  // HTML 콘텐츠가 변경될 때마다 MathJax 재실행 (개선된 재시도 로직)
   useEffect(() => {
     if (mathJaxLoaded && htmlContent && contentRef.current) {
-      // 약간의 지연을 두어 DOM이 완전히 렌더링된 후 MathJax 실행
-      const timer = setTimeout(() => {
+      console.log('MathJax 렌더링 시작...')
+      
+      // DOM이 완전히 렌더링된 후 MathJax 실행 (수식 전처리 포함)
+      const renderMath = (retryCount = 0) => {
+        // 1단계: HTML에서 잘못된 수식 태그들을 LaTeX로 복원
+        preprocessMathElements(contentRef.current)
+        
         if (window.MathJax && window.MathJax.typesetPromise) {
+          console.log(`MathJax 렌더링 시도 ${retryCount + 1}`)
+          
           window.MathJax.typesetPromise([contentRef.current])
             .then(() => {
-              console.log('MathJax 렌더링 완료')
-              // MathJax 렌더링 완료 후 CSS 스타일 강제 적용
+              console.log('✅ MathJax 렌더링 완료')
+              // MathJax 렌더링 완료 후 CSS 스타일 적용
               applyMathJaxStyles()
             })
-            .catch((e) => {
-              console.error('MathJax 렌더링 오류:', e)
+            .catch((error) => {
+              console.error(`❌ MathJax 렌더링 오류 (시도 ${retryCount + 1}):`, error)
+              
+              // 3회까지 재시도
+              if (retryCount < 2) {
+                setTimeout(() => renderMath(retryCount + 1), 500)
+              } else {
+                console.error('MathJax 렌더링이 3회 실패했습니다.')
+              }
             })
+        } else {
+          console.warn('MathJax가 아직 로드되지 않았습니다.')
+          
+          // MathJax가 아직 로드되지 않은 경우 재시도
+          if (retryCount < 5) {
+            setTimeout(() => renderMath(retryCount + 1), 200)
+          }
         }
-      }, 100)
+      }
+      
+      // 약간의 지연 후 렌더링 시작
+      const timer = setTimeout(() => renderMath(), 200)
       
       return () => clearTimeout(timer)
     }
   }, [mathJaxLoaded, htmlContent])
+
+  // HTML에서 수식 태그를 LaTeX로 전처리하는 함수
+  const preprocessMathElements = (container) => {
+    if (!container) return
+    
+    // 1. 기존 <math> 태그들을 LaTeX로 변환
+    const mathElements = container.querySelectorAll('math')
+    mathElements.forEach(mathEl => {
+      const textContent = mathEl.textContent || mathEl.innerText
+      if (textContent) {
+        // 수식 내용을 추출하여 LaTeX 구분자로 감싸기
+        let latexContent = textContent.trim()
+        
+        // 이미 $ 구분자가 있는지 확인
+        if (!latexContent.startsWith('$') && !latexContent.endsWith('$')) {
+          latexContent = `$${latexContent}$`
+        }
+        
+        // 새로운 span 요소로 교체
+        const span = document.createElement('span')
+        span.textContent = latexContent
+        mathEl.parentNode.replaceChild(span, mathEl)
+      }
+    })
+    
+    // 2. 텍스트 노드에서 LaTeX 패턴 정리
+    const textNodes = getTextNodes(container)
+    textNodes.forEach(node => {
+      let text = node.textContent
+      if (!text || !text.trim()) return
+      
+      // 이중 백슬래시를 단일 백슬래시로 변환 (LaTeX 명령어)
+      text = text.replace(/\\\\(frac|sqrt|angle|alpha|beta|theta|gamma|cos|sin|tan|cdot|lt|gt)/g, '\\$1')
+      
+      // LaTeX 명령어가 포함되어 있으나 $ 구분자가 없는 경우 추가
+      if ((text.includes('\\frac') || text.includes('\\sqrt') || text.includes('\\angle') || 
+           text.includes('\\alpha') || text.includes('\\beta') || text.includes('\\theta') ||
+           text.includes('\\cos') || text.includes('\\sin') || text.includes('\\tan')) &&
+          !text.includes('$')) {
+        text = `$${text}$`
+      }
+      
+      // 텍스트가 변경되었으면 업데이트
+      if (text !== node.textContent) {
+        node.textContent = text
+      }
+    })
+  }
+  
+  // DOM의 모든 텍스트 노드를 찾는 헬퍼 함수
+  const getTextNodes = (element) => {
+    const textNodes = []
+    const walker = document.createTreeWalker(
+      element,
+      NodeFilter.SHOW_TEXT,
+      {
+        acceptNode: (node) => {
+          // 스크립트나 스타일 태그 내부는 제외
+          const parent = node.parentElement
+          if (parent && (parent.tagName === 'SCRIPT' || parent.tagName === 'STYLE')) {
+            return NodeFilter.FILTER_REJECT
+          }
+          return NodeFilter.FILTER_ACCEPT
+        }
+      },
+      false
+    )
+    
+    let node
+    while (node = walker.nextNode()) {
+      textNodes.push(node)
+    }
+    
+    return textNodes
+  }
 
   // MathJax 스타일 강제 적용 함수
   const applyMathJaxStyles = () => {
@@ -322,17 +397,28 @@ export default function HtmlRenderer({ htmlContent, isLoading }) {
   <meta charset="utf-8">
   <title>HTML 렌더링 결과</title>
   <script>
+    // 확장 화면용 MathJax 설정 (메인과 동일)
     window.MathJax = {
       tex: {
         inlineMath: [['\\\\(', '\\\\)'], ['$', '$']],
         displayMath: [['\\\\[', '\\\\]'], ['$$', '$$']],
         processEscapes: true
       },
-      svg: {
-        fontCache: 'global'
-      },
       options: {
         skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre']
+      },
+      startup: {
+        ready: () => {
+          console.log('확장 화면 MathJax가 초기화되었습니다.')
+          MathJax.startup.defaultReady()
+          
+          // 초기화 완료 후 수식 렌더링 실행
+          MathJax.typesetPromise().then(() => {
+            console.log('✅ 확장 화면 MathJax 렌더링 완료')
+          }).catch(err => {
+            console.error('❌ 확장 화면 MathJax 렌더링 오류:', err)
+          })
+        }
       }
     };
   </script>
@@ -353,25 +439,23 @@ export default function HtmlRenderer({ htmlContent, isLoading }) {
       box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     }
     
-    /* 수식 렌더링 개선 - 일반 텍스트처럼 정렬 */
+    /* 수식 렌더링 기본 스타일 */
     .MathJax {
-      text-align: left !important;
       display: inline !important;
-      margin: 0 !important;
-      padding: 0 !important;
+      margin: 0 2px !important;
+      vertical-align: baseline !important;
     }
     
-    /* 수식과 텍스트 간격 조정 */
     .MathJax_Display {
       text-align: left !important;
       margin: 0.5em 0 !important;
       padding: 0 !important;
+      display: block !important;
     }
     
-    /* 인라인 수식과 텍스트 간격 조정 */
-    .MathJax_Display > .MathJax {
-      margin: 0 !important;
-      padding: 0 !important;
+    /* 수식이 포함된 단락 스타일 */
+    p:has(.MathJax), div:has(.MathJax) {
+      line-height: 1.6 !important;
     }
     
     ${expansionLayoutOptimizationCSS}
