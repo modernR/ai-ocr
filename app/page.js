@@ -304,6 +304,7 @@ export default function Home() {
               <JsonViewer
                 jsonData={jsonResult}
                 isLoading={isProcessing && currentStep === 'processing'}
+                uploadedImage={uploadedImage}
               />
               {/* 2->3 Send 버튼 */}
               <button

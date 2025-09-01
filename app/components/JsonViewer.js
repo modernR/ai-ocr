@@ -11,7 +11,7 @@ import styles from './JsonViewer.module.css'
  * - 복사 기능
  * - 로딩 상태 표시
  */
-export default function JsonViewer({ jsonData, isLoading }) {
+export default function JsonViewer({ jsonData, isLoading, uploadedImage }) {
   const [expandedKeys, setExpandedKeys] = useState(new Set())
   const [copySuccess, setCopySuccess] = useState(false)
   const [showToast, setShowToast] = useState(false)
@@ -111,6 +111,28 @@ export default function JsonViewer({ jsonData, isLoading }) {
     }
     .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
     .title-section { display: flex; align-items: center; gap: 15px; }
+    .mode-buttons { display: flex; gap: 8px; }
+    .mode-button { 
+      padding: 8px 16px; 
+      border: 1px solid #ddd; 
+      background: white; 
+      cursor: pointer; 
+      border-radius: 4px; 
+      font-size: 14px;
+      transition: all 0.2s ease;
+    }
+    .mode-button.active { 
+      background: #667eea; 
+      color: white; 
+      border-color: #667eea; 
+    }
+    .mode-button:hover { 
+      background: #f0f0f0; 
+      transform: translateY(-1px); 
+    }
+    .mode-button.active:hover { 
+      background: #5a67d8; 
+    }
     .quo-button { 
       padding: 6px; 
       border: 1px solid #ddd; 
@@ -128,6 +150,89 @@ export default function JsonViewer({ jsonData, isLoading }) {
     .button { padding: 8px 16px; border: 1px solid #ddd; background: white; cursor: pointer; border-radius: 4px; font-size: 14px; }
     .button:hover { background: #f0f0f0; }
     .button img { width: 16px; height: 16px; vertical-align: middle; }
+    
+    /* 모드별 콘텐츠 영역 */
+    .mode-content { display: none; }
+    .mode-content.active { display: block; }
+    
+    /* Format 모드 스타일 */
+    .format-container {
+      background: #f8f9fa;
+      border: 1px solid #e9ecef;
+      border-radius: 8px;
+      padding: 20px;
+    }
+    .format-cell {
+      display: flex;
+      align-items: center;
+      margin-bottom: 12px;
+      padding: 12px;
+      border-radius: 6px;
+      background: white;
+      border: 1px solid #e9ecef;
+    }
+    .format-cell.question { border-left: 4px solid #3182ce; }
+    .format-cell.example { border-left: 4px solid #38a169; }
+    .format-cell.choice { border-left: 4px solid #e53e3e; }
+    .format-label {
+      font-weight: 600;
+      min-width: 120px;
+      margin-right: 16px;
+      color: #2d3748;
+    }
+    .format-input {
+      flex: 1;
+      padding: 8px 12px;
+      border: 1px solid #cbd5e0;
+      border-radius: 4px;
+      font-size: 14px;
+      background: #f7fafc;
+    }
+    .format-input:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+    
+    /* Overlay 모드 스타일 */
+    .overlay-container {
+      position: relative;
+      display: inline-block;
+      max-width: 100%;
+    }
+    .overlay-image {
+      max-width: 100%;
+      height: auto;
+      display: block;
+    }
+    .overlay-canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      pointer-events: none;
+    }
+    .overlay-box {
+      position: absolute;
+      border: 2px solid #e53e3e;
+      background: rgba(229, 62, 62, 0.1);
+    }
+    .overlay-box::before {
+      content: attr(data-label);
+      position: absolute;
+      top: -25px;
+      left: -2px;
+      background: #e53e3e;
+      color: white;
+      padding: 2px 6px;
+      font-size: 11px;
+      font-weight: 600;
+      border-radius: 3px;
+      white-space: nowrap;
+      z-index: 10;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+    }
+    
+    /* JSON 모드 스타일 */
     .json-content { white-space: pre-wrap; font-size: 14px; line-height: 1.5; font-family: 'Monaco', 'Menlo', 'Consolas', monospace; }
     .key { color: #d73a49; }
     .string { color: #032f62; }
@@ -220,6 +325,11 @@ export default function JsonViewer({ jsonData, isLoading }) {
     <div class="header">
       <div class="title-section">
         <h2>JSON Viewer</h2>
+        <div class="mode-buttons">
+          <button class="mode-button active" onclick="switchMode('format')">Format</button>
+          <button class="mode-button" onclick="switchMode('json')">JSON</button>
+          <button class="mode-button" onclick="switchMode('overlay')">Overlay</button>
+        </div>
         <button class="quo-button" onclick="showStandardFormat()" title="표준 포맷 보기">
           <img src="/quo.png" alt="Standard Format">
         </button>
@@ -236,7 +346,25 @@ export default function JsonViewer({ jsonData, isLoading }) {
         </button>
       </div>
     </div>
-    <div class="json-content" id="json-content"></div>
+    
+    <!-- Format 모드 -->
+    <div id="format-content" class="mode-content active">
+      <div class="format-container" id="format-container">
+        <!-- Format 모드 내용이 여기에 동적으로 생성됩니다 -->
+      </div>
+    </div>
+    
+    <!-- JSON 모드 -->
+    <div id="json-content" class="mode-content">
+      <div class="json-content" id="json-display"></div>
+    </div>
+    
+    <!-- Overlay 모드 -->
+    <div id="overlay-content" class="mode-content">
+      <div class="overlay-container" id="overlay-container">
+        <!-- Overlay 모드 내용이 여기에 동적으로 생성됩니다 -->
+      </div>
+    </div>
   </div>
 
   <!-- 표준 포맷 모달 -->
@@ -254,10 +382,493 @@ export default function JsonViewer({ jsonData, isLoading }) {
 
   <script>
     const jsonData = ${JSON.stringify(jsonData, null, 2)};
+    const uploadedImageData = ${JSON.stringify(uploadedImage, null, 2)};
+    let currentMode = 'format';
     
-    function renderJSON(data, container, level = 0) {
-      container.innerHTML = formatJSON(data, '', level);
+    // 모드 전환 함수
+    function switchMode(mode) {
+      // 버튼 상태 업데이트
+      document.querySelectorAll('.mode-button').forEach(btn => {
+        btn.classList.remove('active');
+      });
+      event.target.classList.add('active');
+      
+      // 콘텐츠 상태 업데이트
+      document.querySelectorAll('.mode-content').forEach(content => {
+        content.classList.remove('active');
+      });
+      document.getElementById(mode + '-content').classList.add('active');
+      
+      currentMode = mode;
+      
+      // 모드별 초기화
+      switch(mode) {
+        case 'format':
+          renderFormatMode();
+          break;
+        case 'json':
+          renderJSONMode();
+          break;
+        case 'overlay':
+          renderOverlayMode();
+          break;
+      }
+    }
+    
+    // Format 모드 렌더링
+    function renderFormatMode() {
+      const container = document.getElementById('format-container');
+      container.innerHTML = '';
+      
+      // JSON 데이터를 파싱하여 format 셀 생성
+      const formatData = parseJSONToFormat(jsonData);
+      
+      formatData.forEach(item => {
+        const cell = document.createElement('div');
+        cell.className = \`format-cell \${item.type}\`;
+        
+        const label = document.createElement('div');
+        label.className = 'format-label';
+        label.textContent = item.label;
+        
+        const input = document.createElement('input');
+        input.className = 'format-input';
+        input.type = 'text';
+        input.value = item.value;
+        input.readOnly = true;
+        
+        cell.appendChild(label);
+        cell.appendChild(input);
+        container.appendChild(cell);
+      });
+    }
+    
+    // JSON을 Format 모드용 데이터로 변환 (개선된 버전)
+    function parseJSONToFormat(data) {
+      const formatData = [];
+      const allItems = [];
+      
+      // 모든 항목을 수집하고 order 정보를 포함
+      
+      // 발문 처리 - 질의문 배열에서 추출
+      if (data.발문 && data.발문.질의문 && Array.isArray(data.발문.질의문)) {
+        data.발문.질의문.forEach((item, index) => {
+          if (item && typeof item === 'object') {
+            allItems.push({
+              ...item,
+              category: '발문',
+              categoryIndex: index + 1
+            });
+          }
+        });
+      }
+      
+      // 제시문 처리
+      if (data.제시문 && Array.isArray(data.제시문)) {
+        data.제시문.forEach((item, index) => {
+          if (item && typeof item === 'object') {
+            allItems.push({
+              ...item,
+              category: '제시문',
+              categoryIndex: index + 1
+            });
+          }
+        });
+      }
+      
+      // 보기 처리
+      if (data.보기 && Array.isArray(data.보기)) {
+        data.보기.forEach((item, index) => {
+          if (item && typeof item === 'object') {
+            allItems.push({
+              ...item,
+              category: '보기',
+              categoryIndex: index + 1,
+              displayLabel: item.label || \`\${index + 1}\`
+            });
+          }
+        });
+      }
+      
+      // 선택지 처리
+      if (data.선택지 && data.선택지.items && Array.isArray(data.선택지.items)) {
+        data.선택지.items.forEach((item, index) => {
+          if (item && typeof item === 'object') {
+            allItems.push({
+              ...item,
+              category: '선택지',
+              categoryIndex: item.choice_id || (index + 1)
+            });
+          }
+        });
+      }
+      
+      // order 기준으로 정렬
+      allItems.sort((a, b) => {
+        const orderA = a.order || 999;
+        const orderB = b.order || 999;
+        return orderA - orderB;
+      });
+      
+      // 정렬된 항목들을 처리
+      allItems.forEach(item => {
+        const categoryLabel = item.category;
+        const index = item.categoryIndex;
+        
+        // 텍스트 처리
+        const text = item.text || item.text_latex || item.text_raw || '';
+        
+        // 타입별 스타일 결정
+        let itemType = 'question';
+        if (categoryLabel === '보기' || categoryLabel === '제시문') {
+          itemType = 'example';
+        } else if (categoryLabel === '선택지') {
+          itemType = 'choice';
+        }
+        
+        // 메인 항목 추가
+        if (item.type === '이미지') {
+          // 이미지 타입 처리
+          if (item.bbox) {
+            const bboxInfo = \`[좌표] x: \${item.bbox.x}, y: \${item.bbox.y}, w: \${item.bbox.w}, h: \${item.bbox.h}\`;
+            formatData.push({
+              type: itemType,
+              label: \`\${categoryLabel} \${index} (이미지)\`,
+              value: bboxInfo,
+              order: item.order
+            });
+          }
+          
+          // inside_image_text 처리
+          if (item.image && item.image.inside_image_text && Array.isArray(item.image.inside_image_text)) {
+            item.image.inside_image_text.forEach((textItem, textIndex) => {
+              if (textItem && textItem.text) {
+                formatData.push({
+                  type: itemType,
+                  label: \`  └ 텍스트 \${textIndex + 1}\`,
+                  value: textItem.text,
+                  order: item.order + 0.001 * (textIndex + 1) // 하위 순서 보장
+                });
+              }
+            });
+          }
+          
+          // 이미지 URL 정보 추가
+          if (item.image && item.image.url && item.image.url !== 'example.url') {
+            formatData.push({
+              type: itemType,
+              label: \`  └ 이미지 URL\`,
+              value: item.image.url,
+              order: item.order + 0.999
+            });
+          }
+        } else if (text) {
+          // 텍스트 타입 처리
+          let label = \`\${categoryLabel}\`;
+          if (categoryLabel === '보기' && item.displayLabel) {
+            label = \`\${categoryLabel} \${item.displayLabel}\`;
+          } else if (index !== undefined) {
+            label = \`\${categoryLabel} \${index}\`;
+          }
+          
+          formatData.push({
+            type: itemType,
+            label: label,
+            value: text,
+            order: item.order
+          });
+        }
+        
+        // 추가 이미지가 있는 경우 처리
+        if (item.image && item.image.url && item.type !== '이미지') {
+          formatData.push({
+            type: itemType,
+            label: \`  └ 이미지\`,
+            value: item.image.url,
+            order: item.order + 0.001
+          });
+        }
+      });
+      
+      // 추가 필드들 처리 (order 없음)
+      const additionalFields = ['문제번호', '문항번호', '메타'];
+      additionalFields.forEach(field => {
+        if (data[field]) {
+          let fieldValue = '';
+          if (typeof data[field] === 'object') {
+            fieldValue = JSON.stringify(data[field]);
+          } else {
+            fieldValue = String(data[field]);
+          }
+          formatData.push({
+            type: 'question',
+            label: field,
+            value: fieldValue,
+            order: -1 // 맨 앞에 표시
+          });
+        }
+      });
+      
+      // 최종 정렬 (order 우선, 같으면 label 순)
+      formatData.sort((a, b) => {
+        const orderA = a.order || 999;
+        const orderB = b.order || 999;
+        if (orderA !== orderB) {
+          return orderA - orderB;
+        }
+        // order가 같으면 label로 정렬
+        return a.label.localeCompare(b.label);
+      });
+      
+      return formatData;
+    }
+    
+    // JSON 모드 렌더링
+    function renderJSONMode() {
+      const container = document.getElementById('json-display');
+      container.innerHTML = formatJSON(jsonData, '', 0);
       addToggleListeners();
+    }
+    
+    // Overlay 모드 렌더링 (개선된 버전)
+    function renderOverlayMode() {
+      const container = document.getElementById('overlay-container');
+      container.innerHTML = '';
+      
+      // 업로드된 이미지 사용
+      let imageUrl = '';
+      if (uploadedImageData) {
+        if (typeof uploadedImageData === 'string') {
+          imageUrl = uploadedImageData;
+        } else if (uploadedImageData.dataUrl) {
+          imageUrl = uploadedImageData.dataUrl;
+        } else if (uploadedImageData.url) {
+          imageUrl = uploadedImageData.url;
+        }
+      }
+      
+      if (imageUrl) {
+        const img = document.createElement('img');
+        img.className = 'overlay-image';
+        img.src = imageUrl;
+        img.onload = function() {
+          drawOverlayBoxes(container, img);
+        };
+        img.onerror = function() {
+          container.innerHTML = '<p>이미지를 로드할 수 없습니다.</p>';
+        };
+        container.appendChild(img);
+      } else {
+        container.innerHTML = '<p>업로드된 이미지가 없습니다.</p>';
+      }
+    }
+    
+    // 오버레이 박스 그리기 (개선된 버전)
+    function drawOverlayBoxes(container, img) {
+      const canvas = document.createElement('canvas');
+      canvas.className = 'overlay-canvas';
+      canvas.width = img.offsetWidth;
+      canvas.height = img.offsetHeight;
+      container.appendChild(canvas);
+      
+      const ctx = canvas.getContext('2d');
+      
+      // 모든 bbox 좌표를 찾아서 박스 그리기
+      const boxes = findBoundingBoxes(jsonData);
+      
+      console.log('Found bbox boxes:', boxes);
+      console.log('Image dimensions:', img.offsetWidth, 'x', img.offsetHeight);
+      
+      // 제시문 데이터 디버깅
+      if (jsonData.제시문 && jsonData.제시문[0]) {
+        console.log('제시문 데이터:', jsonData.제시문[0]);
+        console.log('제시문 type:', jsonData.제시문[0].type);
+        console.log('제시문 bbox:', jsonData.제시문[0].bbox);
+      }
+      
+      if (boxes.length === 0) {
+        const noBoxesMsg = document.createElement('p');
+        noBoxesMsg.textContent = 'bbox 좌표를 찾을 수 없습니다.';
+        noBoxesMsg.style.color = 'red';
+        noBoxesMsg.style.fontWeight = 'bold';
+        container.appendChild(noBoxesMsg);
+        return;
+      }
+      
+      boxes.forEach((box, index) => {
+        const div = document.createElement('div');
+        div.className = 'overlay-box';
+        
+        let left, top, width, height;
+        
+        if (box.useNormalized) {
+          // 정규화된 좌표를 픽셀 좌표로 변환
+          left = box.x * img.offsetWidth;
+          top = box.y * img.offsetHeight;
+          width = box.width * img.offsetWidth;
+          height = box.height * img.offsetHeight;
+        } else {
+          // 이미 픽셀 좌표인 경우 이미지 크기 비율로 조정
+          const scaleX = img.offsetWidth / img.naturalWidth;
+          const scaleY = img.offsetHeight / img.naturalHeight;
+          left = box.x * scaleX;
+          top = box.y * scaleY;
+          width = box.width * scaleX;
+          height = box.height * scaleY;
+        }
+        
+        div.style.left = left + 'px';
+        div.style.top = top + 'px';
+        div.style.width = width + 'px';
+        div.style.height = height + 'px';
+        div.setAttribute('data-label', box.label);
+        div.title = box.text; // 툴팁으로 텍스트 표시
+        
+        console.log(\`Box \${index}: \${box.label} at (\${left}, \${top}) size \${width}x\${height} [normalized: \${box.useNormalized}]\`);
+        
+        container.appendChild(div);
+      });
+    }
+    
+    // JSON에서 bbox 좌표 찾기 (개선된 버전)
+    function findBoundingBoxes(data) {
+      const boxes = [];
+      
+      console.log('findBoundingBoxes 시작, 데이터:', data);
+      
+      function traverse(obj, path = '') {
+        if (obj && typeof obj === 'object') {
+          Object.keys(obj).forEach(key => {
+            const currentPath = path ? \`\${path}.\${key}\` : key;
+            
+            // bbox가 있는 객체 찾기
+            if (obj[key] && typeof obj[key] === 'object' && obj[key].bbox) {
+              const text = obj[key].text || obj[key].text_latex || obj[key].text_raw || '';
+              // 제시문의 경우 type이 '이미지'인 경우도 처리
+              const isImageType = obj[key].type === '이미지';
+              
+              console.log(\`키: \${key}, text: \${text}, type: \${obj[key].type}, isImageType: \${isImageType}\`);
+              
+              if (text || isImageType) {
+                const bbox = obj[key].bbox;
+                // 픽셀 좌표 우선 사용, 없으면 정규화된 좌표 사용
+                let x, y, width, height;
+                let useNormalized = false;
+                
+                if (bbox.x !== undefined && bbox.y !== undefined) {
+                  // 픽셀 좌표가 있는 경우
+                  x = bbox.x;
+                  y = bbox.y;
+                  width = bbox.w || bbox.width || 0;
+                  height = bbox.h || bbox.height || 0;
+                } else if (bbox.x_norm !== undefined && bbox.y_norm !== undefined) {
+                  // 정규화된 좌표만 있는 경우
+                  x = bbox.x_norm;
+                  y = bbox.y_norm;
+                  width = bbox.w_norm || 0;
+                  height = bbox.h_norm || 0;
+                  useNormalized = true;
+                } else {
+                  // 좌표가 없는 경우
+                  x = 0;
+                  y = 0;
+                  width = 0;
+                  height = 0;
+                }
+                
+                // 제시문 이미지의 경우 특별한 라벨 사용
+                let label = key;
+                let displayText = text;
+                if (isImageType && obj[key].id) {
+                  label = '제시문';
+                  displayText = '이미지 영역';
+                }
+                
+                boxes.push({
+                  x: x,
+                  y: y,
+                  width: width,
+                  height: height,
+                  label: label,
+                  text: displayText || text,
+                  useNormalized: useNormalized
+                });
+              }
+            }
+            
+            // 배열 내의 객체들도 탐색
+            if (Array.isArray(obj[key])) {
+              obj[key].forEach((item, index) => {
+                if (item && typeof item === 'object') {
+                  // 배열 내 객체에 bbox가 있는 경우
+                  if (item.bbox) {
+                    const text = item.text || item.text_latex || item.text_raw || '';
+                    const isImageType = item.type === '이미지';
+                    
+                    console.log(\`배열 키: \${key}[\${index}], text: \${text}, type: \${item.type}, isImageType: \${isImageType}\`);
+                    
+                    if (text || isImageType) {
+                      const bbox = item.bbox;
+                      let x, y, width, height;
+                      let useNormalized = false;
+                      
+                      if (bbox.x !== undefined && bbox.y !== undefined) {
+                        // 픽셀 좌표가 있는 경우
+                        x = bbox.x;
+                        y = bbox.y;
+                        width = bbox.w || bbox.width || 0;
+                        height = bbox.h || bbox.height || 0;
+                      } else if (bbox.x_norm !== undefined && bbox.y_norm !== undefined) {
+                        // 정규화된 좌표만 있는 경우
+                        x = bbox.x_norm;
+                        y = bbox.y_norm;
+                        width = bbox.w_norm || 0;
+                        height = bbox.h_norm || 0;
+                        useNormalized = true;
+                      } else {
+                        // 좌표가 없는 경우
+                        x = 0;
+                        y = 0;
+                        width = 0;
+                        height = 0;
+                      }
+                      
+                      // 제시문 이미지의 경우 특별한 라벨 사용
+                      let label = \`\${key}_\${index}\`;
+                      let displayText = text;
+                      if (isImageType && item.id) {
+                        label = '제시문';
+                        displayText = '이미지 영역';
+                      }
+                      
+                      boxes.push({
+                        x: x,
+                        y: y,
+                        width: width,
+                        height: height,
+                        label: label,
+                        text: displayText || text,
+                        useNormalized: useNormalized
+                      });
+                    }
+                  }
+                  
+                  // 배열 내 객체의 하위 구조도 탐색
+                  traverse(item, \`\${currentPath}[\${index}]\`);
+                }
+              });
+            }
+            
+            // 일반 객체도 계속 탐색
+            if (typeof obj[key] === 'object' && obj[key] !== null && !Array.isArray(obj[key])) {
+              traverse(obj[key], currentPath);
+            }
+          });
+        }
+      }
+      
+      traverse(data);
+      return boxes;
     }
     
     function formatJSON(data, path, level) {
@@ -370,8 +981,8 @@ export default function JsonViewer({ jsonData, isLoading }) {
       }
     }
     
-    // 초기 렌더링
-    renderJSON(jsonData, document.getElementById('json-content'));
+    // 초기 렌더링 (Format 모드가 기본)
+    renderFormatMode();
   </script>
 </body>
 </html>`;

@@ -373,6 +373,14 @@ app/
   - OCR API: gpt-5-chat-latest 모델 적용
   - HTML 렌더링 API: gpt-5-chat-latest 모델 적용
   - 최신 GPT-5 Chat Latest 모델의 향상된 성능 활용
+- ✅ **Phase 20: JSON 확장 화면 3가지 모드 구현 완료**
+  - 확장 화면에서 format, json, overlay 3가지 모드 구현
+  - Format 모드: JSON을 파싱하여 label과 input box로 구성된 셀 생성
+  - Overlay 모드: 원본 이미지 위에 bbox 좌표 기반으로 박스 그리기
+  - JSON 모드: 기존 JSON 뷰어와 동일한 기능 유지
+  - 각 모드별 전용 CSS 스타일 및 UX 개선
+  - Format 모드: 발문, 보기, 선택지 구조 파싱 및 choice_id 처리 개선
+  - Overlay 모드: 영역1 업로드 이미지 사용 및 bbox 좌표 추출 로직 개선
 
 ### 배포 완료 상태
 - 🚀 **GitHub 푸시 완료** (커밋: 2bf58e9)
@@ -407,6 +415,7 @@ app/
 - ✅ Phase 17: 프롬프트 강화 작업 완료
 - ✅ Phase 18: API 초기화 강화 작업 완료
 - ✅ Phase 19: 모델 업그레이드 작업 완료
+- ✅ Phase 20: JSON 확장 화면 3가지 모드 구현 작업 완료
 - 📋 다음: 프로덕션 환경에서 최종 테스트 및 모니터링
 
 ---
