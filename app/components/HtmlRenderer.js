@@ -19,7 +19,7 @@ export default function HtmlRenderer({ htmlContent, isLoading }) {
   const [showToast, setShowToast] = useState(false)
   const [toastPosition, setToastPosition] = useState({ x: 0, y: 0 })
 
-  // HTML 정화 (XSS 방지)
+  // HTML 정화 및 제시문 영역 최소화 (XSS 방지)
   const sanitizedHtml = useMemo(() => {
     if (!htmlContent) return ''
     
@@ -27,6 +27,98 @@ export default function HtmlRenderer({ htmlContent, isLoading }) {
     if (typeof window === 'undefined') return htmlContent
     
     try {
+      // 제시문 영역 최소화를 위한 CSS 스타일 추가
+      const materialMinimizationCSS = `
+        <style>
+          /* 제시문 영역 최소화 스타일 */
+          .material-section, 
+          .제시문, 
+          [class*="material"], 
+          [class*="제시문"],
+          div:has(img[src*="example.url"]),
+          div:has(img[alt*="제시문"]),
+          div:has(img[alt*="material"]) {
+            max-width: 300px !important;
+            max-height: 200px !important;
+            overflow: hidden !important;
+            border: 1px solid #ddd !important;
+            border-radius: 8px !important;
+            padding: 10px !important;
+            margin: 10px 0 !important;
+            background: #f9f9f9 !important;
+            position: relative !important;
+          }
+          
+          /* 제시문 내 이미지 최소화 */
+          .material-section img, 
+          .제시문 img,
+          [class*="material"] img,
+          [class*="제시문"] img,
+          div:has(img[src*="example.url"]) img {
+            max-width: 100% !important;
+            max-height: 150px !important;
+            object-fit: contain !important;
+            display: block !important;
+            margin: 0 auto !important;
+          }
+          
+          /* 제시문 텍스트 영역 최소화 */
+          .material-section p,
+          .material-section div,
+          .제시문 p,
+          .제시문 div,
+          [class*="material"] p,
+          [class*="material"] div,
+          [class*="제시문"] p,
+          [class*="제시문"] div {
+            font-size: 12px !important;
+            line-height: 1.3 !important;
+            margin: 5px 0 !important;
+            padding: 5px !important;
+            background: white !important;
+            border-radius: 4px !important;
+            border: 1px solid #eee !important;
+          }
+          
+          /* 제시문 영역에 최소화 표시 */
+          .material-section::before,
+          .제시문::before,
+          [class*="material"]::before,
+          [class*="제시문"]::before {
+            content: "📄 제시문 (최소화됨)" !important;
+            display: block !important;
+            font-size: 11px !important;
+            font-weight: bold !important;
+            color: #666 !important;
+            background: #e9ecef !important;
+            padding: 4px 8px !important;
+            margin-bottom: 8px !important;
+            border-radius: 4px !important;
+            text-align: center !important;
+          }
+          
+          /* 제시문 영역 호버 시 확대 */
+          .material-section:hover,
+          .제시문:hover,
+          [class*="material"]:hover,
+          [class*="제시문"]:hover {
+            max-width: 500px !important;
+            max-height: 400px !important;
+            z-index: 1000 !important;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2) !important;
+          }
+        </style>
+      `
+      
+      // HTML에 제시문 최소화 CSS 추가
+      const htmlWithMinimization = htmlContent.replace(
+        '</head>',
+        `${materialMinimizationCSS}</head>`
+      ).replace(
+        '<body>',
+        '<body>' + materialMinimizationCSS
+      )
+      
       // DOMPurify 설정 - 안전한 태그와 속성만 허용
       const config = {
         ALLOWED_TAGS: [
@@ -44,7 +136,7 @@ export default function HtmlRenderer({ htmlContent, isLoading }) {
         ADD_ATTR: ['data-ph', 'data-aspect']
       }
       
-      return DOMPurify.sanitize(htmlContent, config)
+      return DOMPurify.sanitize(htmlWithMinimization, config)
     } catch (error) {
       console.error('DOMPurify 오류:', error)
       // DOMPurify 실패 시 기본 HTML 반환 (보안상 위험하지만 기능 유지)
