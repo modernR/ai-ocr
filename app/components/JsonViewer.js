@@ -708,13 +708,19 @@ export default function JsonViewer({ jsonData, isLoading, uploadedImage }) {
           width = box.width * img.offsetWidth;
           height = box.height * img.offsetHeight;
         } else {
-          // 이미 픽셀 좌표인 경우 이미지 크기 비율로 조정
-          const scaleX = img.offsetWidth / img.naturalWidth;
-          const scaleY = img.offsetHeight / img.naturalHeight;
+          // 이미 픽셀 좌표인 경우 JSON 메타데이터의 이미지 크기를 기준으로 조정
+          const jsonImageWidth = jsonData?.메타?.page_image?.image_size?.width_px || img.naturalWidth;
+          const jsonImageHeight = jsonData?.메타?.page_image?.image_size?.height_px || img.naturalHeight;
+          
+          const scaleX = img.offsetWidth / jsonImageWidth;
+          const scaleY = img.offsetHeight / jsonImageHeight;
+          
           left = box.x * scaleX;
           top = box.y * scaleY;
           width = box.width * scaleX;
           height = box.height * scaleY;
+          
+          console.log(\`JSON 이미지 크기: \${jsonImageWidth}x\${jsonImageHeight}, 스케일: \${scaleX.toFixed(3)}x\${scaleY.toFixed(3)}\`);
         }
         
         div.style.left = left + 'px';
