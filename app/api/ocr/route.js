@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import OpenAI from 'openai'
 
-// 프롬프트를 코드에 직접 포함 (Vercel 서버리스 환경 대응)
+// 프롬프트를 코드에 직접 포함 (Vercel 서버리스 환경 대응) 11
 const SYSTEM_PROMPT = `중요한 문제이니 주의깊게 살펴보고 처리해줘
 
 당신은 시험지/교재 이미지를 분석해 **표준 JSON(v1.1.0)** 으로 반환하는 추출기다.
