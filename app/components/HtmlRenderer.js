@@ -60,7 +60,7 @@ export default function HtmlRenderer({ htmlContent, isLoading }) {
       return
     }
 
-    // MathJax 설정을 먼저 정의
+    // MathJax 설정을 먼저 정의 - 수식을 일반 텍스트처럼 정렬하고 배치 허용
     window.MathJax = {
       tex: {
         inlineMath: [['\\(', '\\)'], ['$', '$']],
@@ -71,7 +71,38 @@ export default function HtmlRenderer({ htmlContent, isLoading }) {
         fontCache: 'global'
       },
       options: {
-        skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre']
+        skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre'],
+        // 수식을 일반 텍스트처럼 처리하도록 설정
+        enableMenu: false,
+        menuSettings: {
+          texHints: false,
+          semantics: false,
+          zoom: false
+        }
+      },
+      // 수식 렌더링 설정 개선
+      chtml: {
+        // 수식을 일반 텍스트처럼 정렬
+        displayAlign: 'left',
+        displayIndent: '0',
+        // 수식 전후 텍스트 배치 허용
+        scale: 1,
+        minScale: 0.5,
+        maxScale: 2,
+        // 수식과 텍스트 간격 조정
+        mtextInheritFont: true,
+        mtextDir: 'ltr'
+      },
+      // SVG 렌더링 설정도 동일하게 적용
+      svg: {
+        fontCache: 'global',
+        displayAlign: 'left',
+        displayIndent: '0',
+        scale: 1,
+        minScale: 0.5,
+        maxScale: 2,
+        mtextInheritFont: true,
+        mtextDir: 'ltr'
       }
     }
 
@@ -103,6 +134,8 @@ export default function HtmlRenderer({ htmlContent, isLoading }) {
           window.MathJax.typesetPromise([contentRef.current])
             .then(() => {
               console.log('MathJax 렌더링 완료')
+              // MathJax 렌더링 완료 후 CSS 스타일 강제 적용
+              applyMathJaxStyles()
             })
             .catch((e) => {
               console.error('MathJax 렌더링 오류:', e)
@@ -113,6 +146,35 @@ export default function HtmlRenderer({ htmlContent, isLoading }) {
       return () => clearTimeout(timer)
     }
   }, [mathJaxLoaded, htmlContent])
+
+  // MathJax 스타일 강제 적용 함수
+  const applyMathJaxStyles = () => {
+    if (!contentRef.current) return
+    
+    // MathJax 요소들에 스타일 강제 적용
+    const mathJaxElements = contentRef.current.querySelectorAll('.MathJax, .MathJax_Display')
+    mathJaxElements.forEach(element => {
+      if (element.classList.contains('MathJax')) {
+        element.style.textAlign = 'left'
+        element.style.display = 'inline'
+        element.style.margin = '0'
+        element.style.padding = '0'
+        element.style.verticalAlign = 'baseline'
+      } else if (element.classList.contains('MathJax_Display')) {
+        element.style.textAlign = 'left'
+        element.style.margin = '0.5em 0'
+        element.style.padding = '0'
+        element.style.display = 'block'
+      }
+    })
+    
+    // 수식이 포함된 텍스트 블록 스타일 적용
+    const mathTextBlocks = contentRef.current.querySelectorAll('p:has(.MathJax), div:has(.MathJax)')
+    mathTextBlocks.forEach(block => {
+      block.style.textAlign = 'left'
+      block.style.lineHeight = '1.6'
+    })
+  }
 
   // HTML 복사 기능 (토스트 메시지 포함)
   const copyToClipboard = async (event) => {
@@ -289,6 +351,27 @@ export default function HtmlRenderer({ htmlContent, isLoading }) {
       padding: 20px; 
       border-radius: 8px; 
       box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    /* 수식 렌더링 개선 - 일반 텍스트처럼 정렬 */
+    .MathJax {
+      text-align: left !important;
+      display: inline !important;
+      margin: 0 !important;
+      padding: 0 !important;
+    }
+    
+    /* 수식과 텍스트 간격 조정 */
+    .MathJax_Display {
+      text-align: left !important;
+      margin: 0.5em 0 !important;
+      padding: 0 !important;
+    }
+    
+    /* 인라인 수식과 텍스트 간격 조정 */
+    .MathJax_Display > .MathJax {
+      margin: 0 !important;
+      padding: 0 !important;
     }
     
     ${expansionLayoutOptimizationCSS}

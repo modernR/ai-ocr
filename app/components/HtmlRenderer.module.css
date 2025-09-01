@@ -270,6 +270,49 @@
   text-decoration: underline;
 }
 
+/* 수식 렌더링 개선 - 일반 텍스트처럼 정렬 */
+.renderedHtml .MathJax {
+  text-align: left !important;
+  display: inline !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  vertical-align: baseline !important;
+}
+
+/* 수식과 텍스트 간격 조정 */
+.renderedHtml .MathJax_Display {
+  text-align: left !important;
+  margin: 0.5em 0 !important;
+  padding: 0 !important;
+  display: block !important;
+}
+
+/* 인라인 수식과 텍스트 간격 조정 */
+.renderedHtml .MathJax_Display > .MathJax {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* 수식 컨테이너 스타일 */
+.renderedHtml .MathJax_Display {
+  text-align: left !important;
+  margin: 0.5em 0 !important;
+  padding: 0 !important;
+}
+
+/* 수식과 텍스트가 함께 배치될 때의 스타일 */
+.renderedHtml p:has(.MathJax),
+.renderedHtml div:has(.MathJax) {
+  text-align: left !important;
+  line-height: 1.6 !important;
+}
+
+/* 수식이 포함된 텍스트 블록의 정렬 */
+.renderedHtml .mathText {
+  text-align: left !important;
+  line-height: 1.6 !important;
+}
+
 /* 로딩 상태 */
 .loadingState {
   display: flex;
