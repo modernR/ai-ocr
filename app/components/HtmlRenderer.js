@@ -19,7 +19,7 @@ export default function HtmlRenderer({ htmlContent, isLoading }) {
   const [showToast, setShowToast] = useState(false)
   const [toastPosition, setToastPosition] = useState({ x: 0, y: 0 })
 
-  // HTML 정화 및 제시문 영역 최소화 (XSS 방지)
+  // HTML 정화 (XSS 방지)
   const sanitizedHtml = useMemo(() => {
     if (!htmlContent) return ''
     
@@ -27,98 +27,6 @@ export default function HtmlRenderer({ htmlContent, isLoading }) {
     if (typeof window === 'undefined') return htmlContent
     
     try {
-      // 제시문 영역 최소화를 위한 CSS 스타일 추가
-      const materialMinimizationCSS = `
-        <style>
-          /* 제시문 영역 최소화 스타일 */
-          .material-section, 
-          .제시문, 
-          [class*="material"], 
-          [class*="제시문"],
-          div:has(img[src*="example.url"]),
-          div:has(img[alt*="제시문"]),
-          div:has(img[alt*="material"]) {
-            max-width: 300px !important;
-            max-height: 200px !important;
-            overflow: hidden !important;
-            border: 1px solid #ddd !important;
-            border-radius: 8px !important;
-            padding: 10px !important;
-            margin: 10px 0 !important;
-            background: #f9f9f9 !important;
-            position: relative !important;
-          }
-          
-          /* 제시문 내 이미지 최소화 */
-          .material-section img, 
-          .제시문 img,
-          [class*="material"] img,
-          [class*="제시문"] img,
-          div:has(img[src*="example.url"]) img {
-            max-width: 100% !important;
-            max-height: 150px !important;
-            object-fit: contain !important;
-            display: block !important;
-            margin: 0 auto !important;
-          }
-          
-          /* 제시문 텍스트 영역 최소화 */
-          .material-section p,
-          .material-section div,
-          .제시문 p,
-          .제시문 div,
-          [class*="material"] p,
-          [class*="material"] div,
-          [class*="제시문"] p,
-          [class*="제시문"] div {
-            font-size: 12px !important;
-            line-height: 1.3 !important;
-            margin: 5px 0 !important;
-            padding: 5px !important;
-            background: white !important;
-            border-radius: 4px !important;
-            border: 1px solid #eee !important;
-          }
-          
-          /* 제시문 영역에 최소화 표시 */
-          .material-section::before,
-          .제시문::before,
-          [class*="material"]::before,
-          [class*="제시문"]::before {
-            content: "📄 제시문 (최소화됨)" !important;
-            display: block !important;
-            font-size: 11px !important;
-            font-weight: bold !important;
-            color: #666 !important;
-            background: #e9ecef !important;
-            padding: 4px 8px !important;
-            margin-bottom: 8px !important;
-            border-radius: 4px !important;
-            text-align: center !important;
-          }
-          
-          /* 제시문 영역 호버 시 확대 */
-          .material-section:hover,
-          .제시문:hover,
-          [class*="material"]:hover,
-          [class*="제시문"]:hover {
-            max-width: 500px !important;
-            max-height: 400px !important;
-            z-index: 1000 !important;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.2) !important;
-          }
-        </style>
-      `
-      
-      // HTML에 제시문 최소화 CSS 추가
-      const htmlWithMinimization = htmlContent.replace(
-        '</head>',
-        `${materialMinimizationCSS}</head>`
-      ).replace(
-        '<body>',
-        '<body>' + materialMinimizationCSS
-      )
-      
       // DOMPurify 설정 - 안전한 태그와 속성만 허용
       const config = {
         ALLOWED_TAGS: [
@@ -136,7 +44,7 @@ export default function HtmlRenderer({ htmlContent, isLoading }) {
         ADD_ATTR: ['data-ph', 'data-aspect']
       }
       
-      return DOMPurify.sanitize(htmlWithMinimization, config)
+      return DOMPurify.sanitize(htmlContent, config)
     } catch (error) {
       console.error('DOMPurify 오류:', error)
       // DOMPurify 실패 시 기본 HTML 반환 (보안상 위험하지만 기능 유지)
@@ -241,6 +149,110 @@ export default function HtmlRenderer({ htmlContent, isLoading }) {
 
   // HTML을 새 창에서 열기 (MathJax 포함)
   const openInNewWindow = () => {
+    // 확장 화면용 제시문 영역 레이아웃 최적화 CSS
+    const expansionLayoutOptimizationCSS = `
+      /* 제시문 영역 레이아웃 최적화 */
+      .material-section, 
+      .제시문, 
+      [class*="material"], 
+      [class*="제시문"],
+      div:has(img[src*="example.url"]),
+      div:has(img[alt*="제시문"]),
+      div:has(img[alt*="material"]) {
+        /* 높이를 내용에 맞춰 자동 조정 */
+        min-height: auto !important;
+        height: fit-content !important;
+        /* 적절한 여백 설정 */
+        padding: 12px 16px !important;
+        margin: 12px 0 !important;
+        /* 텍스트가 영역 밖으로 나가지 않도록 */
+        overflow: hidden !important;
+        /* 레이아웃 정렬 */
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 8px !important;
+        /* 테두리와 배경 */
+        border: 1px solid #e2e8f0 !important;
+        border-radius: 8px !important;
+        background: #f8fafc !important;
+      }
+      
+      /* 제시문 내 텍스트 영역 레이아웃 최적화 */
+      .material-section p,
+      .material-section div,
+      .제시문 p,
+      .제시문 div,
+      [class*="material"] p,
+      [class*="material"] div,
+      [class*="제시문"] p,
+      [class*="제시문"] div {
+        /* 텍스트 내용에 맞춰 높이 조정 */
+        min-height: auto !important;
+        height: fit-content !important;
+        /* 텍스트 겹침 방지 */
+        margin: 0 !important;
+        padding: 6px 8px !important;
+        /* 텍스트가 영역 밖으로 나가지 않도록 */
+        overflow-wrap: break-word !important;
+        word-wrap: break-word !important;
+        word-break: break-word !important;
+        /* 텍스트가 없으면 높이를 최소화 */
+        line-height: 1.5 !important;
+        /* 배경과 테두리 */
+        background: white !important;
+        border: 1px solid #e2e8f0 !important;
+        border-radius: 4px !important;
+        /* 텍스트 겹침 방지를 위한 위치 설정 */
+        position: relative !important;
+        z-index: 1 !important;
+      }
+      
+      /* 제시문 내 이미지 영역 최적화 */
+      .material-section img,
+      .제시문 img,
+      [class*="material"] img,
+      [class*="제시문"] img {
+        /* 이미지 크기 제한 */
+        max-width: 100% !important;
+        max-height: 200px !important;
+        height: auto !important;
+        width: auto !important;
+        /* 이미지 겹침 방지 */
+        display: block !important;
+        margin: 8px 0 !important;
+        /* 이미지가 영역 밖으로 나가지 않도록 */
+        object-fit: contain !important;
+        /* 이미지 겹침 방지를 위한 위치 설정 */
+        position: relative !important;
+        z-index: 2 !important;
+      }
+      
+      /* 빈 텍스트 영역 높이 최소화 */
+      .material-section p:empty,
+      .제시문 p:empty,
+      [class*="material"] p:empty,
+      [class*="제시문"] p:empty,
+      .material-section div:empty,
+      .제시문 div:empty,
+      [class*="material"] div:empty,
+      [class*="제시문"] div:empty {
+        height: 0 !important;
+        min-height: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        overflow: hidden !important;
+        display: none !important;
+      }
+      
+      /* 제시문 영역 상단 라벨 제거 */
+      .material-section::before,
+      .제시문::before,
+      [class*="material"]::before,
+      [class*="제시문"]::before {
+        display: none !important;
+      }
+    `
+
     const htmlWithMathJax = `
 <!DOCTYPE html>
 <html>
@@ -278,6 +290,8 @@ export default function HtmlRenderer({ htmlContent, isLoading }) {
       border-radius: 8px; 
       box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     }
+    
+    ${expansionLayoutOptimizationCSS}
   </style>
 </head>
 <body>
